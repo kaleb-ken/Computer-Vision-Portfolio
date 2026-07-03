@@ -34,13 +34,16 @@ while True:
     # Converting colour config for mediapipe
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
+    # Detecting hand in video
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
     timestamp_ms = int((time.time() - start_time) * 1000)
     result = detector.detect_for_video(mp_image,timestamp_ms)
+    
+    # Outputing text to feed
     text = f"Hands detected: {len(result.hand_landmarks)}"
     cv2.putText(frame, text, (40, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness=15)
    
-
+    # Displaying feed
     cv2.imshow('capture', frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
