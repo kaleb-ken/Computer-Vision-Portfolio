@@ -39,9 +39,21 @@ while True:
     timestamp_ms = int((time.time() - start_time) * 1000)
     result = detector.detect_for_video(mp_image,timestamp_ms)
     
+    # Checking number of hands and if left or right
+    hands_num = f"Hands detected: {len(result.hand_landmarks)}"
+    detected_L, detected_R = "", ""
+    for i in range(len(result.hand_landmarks)):
+        if result.handedness[i][0].category_name == "Left":
+            detected_L = "detected"
+        if result.handedness[i][0].category_name == "Right":
+            detected_R = "detected"
+    
+    
     # Outputing text to feed
-    text = f"Hands detected: {len(result.hand_landmarks)}"
-    cv2.putText(frame, text, (40, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness=15)
+    cv2.putText(frame, hands_num, (40, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness=4)
+    cv2.putText(frame, f"Right: {detected_R}", (40, 430), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness=4)
+    cv2.putText(frame, f"Left: {detected_L}", (40, 460), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness=4)
+
    
     # Displaying feed
     cv2.imshow('capture', frame)
