@@ -40,6 +40,23 @@ with FaceLandmarker.create_from_options(options) as landmarker:
         face_landmarker_result = landmarker.detect_for_video(mp_image, frame_timestamp_ms)
         print(face_landmarker_result)  # just to confirm it's working, for now
 
+        frame_height, frame_width = frame.shape[:2]
+
+        # Loop over each detected face (usually just one, but supports more)
+        for face_landmarks in face_landmarker_result.face_landmarks:
+            # Pull out all x and y coords for this face
+            x_coords = [landmark.x for landmark in face_landmarks]
+            y_coords = [landmark.y for landmark in face_landmarks]
+
+            # Convert normalized (0-1) coords to actual pixel coords
+            x_min = int(min(x_coords) * frame_width)
+            x_max = int(max(x_coords) * frame_width)
+            y_min = int(min(y_coords) * frame_height)
+            y_max = int(max(y_coords) * frame_height)
+
+            # Draw the bounding box
+            cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
+
         cv2.imshow('Face Landmarker', frame)
         if cv2.waitKey(5) & 0xFF == ord('q'):
             break
