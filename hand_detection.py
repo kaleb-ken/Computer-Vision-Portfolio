@@ -46,14 +46,13 @@ while True:
         if result.handedness[i][0].category_name == "Right":
             detected_R = "detected"
 
+    # Draws landmarks on detected hands
     hands_num = f"Hands detected: {len(result.hand_landmarks)}"
     if result.hand_landmarks:
             h, w, _ = frame.shape  # Get pixel dimensions of the camera feed
             for hand_landmarks in result.hand_landmarks:
                 for landmark in hand_landmarks:
                     cx, cy = int(landmark.x * w), int(landmark.y * h)
-                    
-                    # Draw a bright cyan circle on each joint
                     cv2.circle(frame, (cx, cy), 5, (191, 64, 191), cv2.FILLED)
     
 
