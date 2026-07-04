@@ -11,7 +11,6 @@ import cv2
 import mediapipe as mp
 from mediapipe.tasks.python import vision
 
-
 # Setting up capture
 feed = cv2.VideoCapture(0)
 feed.set(cv2.CAP_PROP_FRAME_HEIGHT, value=500)
@@ -39,16 +38,25 @@ while True:
     timestamp_ms = int((time.time() - start_time) * 1000)
     result = detector.detect_for_video(mp_image,timestamp_ms)
     
-    # Checking number of hands and if left or right
-    hands_num = f"Hands detected: {len(result.hand_landmarks)}"
+    # Checking if left or right
     detected_L, detected_R = "", ""
     for i in range(len(result.hand_landmarks)):
         if result.handedness[i][0].category_name == "Left":
             detected_L = "detected"
         if result.handedness[i][0].category_name == "Right":
             detected_R = "detected"
+
+    hands_num = f"Hands detected: {len(result.hand_landmarks)}"
+    if result.hand_landmarks:
+            h, w, _ = frame.shape  # Get pixel dimensions of the camera feed
+            for hand_landmarks in result.hand_landmarks:
+                for landmark in hand_landmarks:
+                    cx, cy = int(landmark.x * w), int(landmark.y * h)
+                    
+                    # Draw a bright cyan circle on each joint
+                    cv2.circle(frame, (cx, cy), 5, (191, 64, 191), cv2.FILLED)
     
-    
+
     # Outputing text to feed
     cv2.putText(frame, hands_num, (40, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness=4)
     cv2.putText(frame, f"Right: {detected_R}", (40, 430), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness=4)
