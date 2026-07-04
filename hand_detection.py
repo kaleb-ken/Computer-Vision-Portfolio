@@ -65,7 +65,6 @@ while True:
                 for landmark in hand_landmarks:
                     cx, cy = int(landmark.x * w), int(landmark.y * h)
                     coord_landmarks.append((cx,cy))
-                    #cv2.circle(frame, (cx,cy),  5, (191, 64, 191), cv2.FILLED)
             
                 # Draws lines between each landmark based
                 for line in HAND_LINES:
