@@ -21,8 +21,17 @@ model_path = "./models/hand_landmarker.task"
 base_options = mp.tasks.BaseOptions(model_asset_path=model_path)
 options = vision.HandLandmarkerOptions(base_options=base_options, num_hands=2, running_mode=vision.RunningMode.VIDEO)
 detector = vision.HandLandmarker.create_from_options(options)
-
 start_time = time.time()
+
+# List of landmark connections
+HAND_LINES = [
+    (0, 1), (1, 2), (2, 3), (3, 4), # Wrist to thumb
+    (0, 5), (5, 6), (6, 7), (7, 8), # Wrist to index
+    (5, 9), (9, 10), (10, 11), (11, 12), # Index joint to Middle
+    (9, 13), (13, 14), (14, 15), (15, 16), # Middle joint to Ring
+    (0, 17), (17, 18), (18, 19), (19, 20), # Wrist to pinky
+    (13, 17) # Pinky joint to Ring joint
+]
 
 # Running video feed
 while True:
@@ -54,6 +63,10 @@ while True:
                 for landmark in hand_landmarks:
                     cx, cy = int(landmark.x * w), int(landmark.y * h)
                     cv2.circle(frame, (cx, cy), 5, (191, 64, 191), cv2.FILLED)
+            
+            for line in HAND_LINES:
+                list_start, list_end = line
+                point_1 = pixel_landmark
     
 
     # Outputing text to feed
