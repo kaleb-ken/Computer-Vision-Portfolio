@@ -67,13 +67,13 @@ while True:
                     coord_landmarks.append((cx,cy))
                     cv2.circle(frame, (cx, cy), 5, (191, 64, 191), cv2.FILLED)
             
-            # Draws lines between each landmark based
-            for line in HAND_LINES:
-                list_start, list_end = line
-                point_start = coord_landmarks[list_start]
-                point_end = coord_landmarks[list_end]
+                # Draws lines between each landmark based
+                for line in HAND_LINES:
+                    list_start, list_end = line
+                    point_start = coord_landmarks[list_start]
+                    point_end = coord_landmarks[list_end]
 
-                cv2.line(frame, point_end, point_start, (203, 242, 172), 3)
+                    cv2.line(frame, point_end, point_start, (203, 242, 172), 3)
     
 
     # Outputing text to feed
