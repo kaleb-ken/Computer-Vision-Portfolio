@@ -10,7 +10,7 @@ from mediapipe.tasks.python.vision import drawing_styles
 import numpy as np
 import matplotlib.pyplot as plt
 
-model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "face_landmarker.task")
+model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", "face_landmarker.task")
 
 BaseOptions = mp.tasks.BaseOptions
 FaceLandmarker = mp.tasks.vision.FaceLandmarker
