@@ -10,13 +10,16 @@ from mediapipe.tasks.python.vision import drawing_styles
 import numpy as np
 import matplotlib.pyplot as plt
 
+#better path finding
 model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", "face_landmarker.task")
 
+#shortcut for mediapipe classes
 BaseOptions = mp.tasks.BaseOptions
 FaceLandmarker = mp.tasks.vision.FaceLandmarker
 FaceLandmarkerOptions = mp.tasks.vision.FaceLandmarkerOptions
 VisionRunningMode = mp.tasks.vision.RunningMode
 
+#Creates a face landmarker object with the specified model and options
 options = FaceLandmarkerOptions(
     base_options=BaseOptions(model_asset_path=model_path),
     running_mode=VisionRunningMode.VIDEO)
@@ -38,7 +41,7 @@ with FaceLandmarker.create_from_options(options) as landmarker:
         frame_timestamp_ms = int(time.time() * 1000)
 
         face_landmarker_result = landmarker.detect_for_video(mp_image, frame_timestamp_ms)
-        print(face_landmarker_result)  # just to confirm it's working, for now
+        print(face_landmarker_result)  # prints out data for each detected face, including landmarks and bounding boxes
 
         frame_height, frame_width = frame.shape[:2]
 
@@ -56,7 +59,7 @@ with FaceLandmarker.create_from_options(options) as landmarker:
 
             # Draw the bounding box
             cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
-
+        #press q to quit
         cv2.imshow('Face Landmarker', frame)
         if cv2.waitKey(5) & 0xFF == ord('q'):
             break
