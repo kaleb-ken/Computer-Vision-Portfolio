@@ -61,19 +61,20 @@ while True:
             h, w, _ = frame.shape  # Get pixel dimensions of the camera feed
             for hand_landmarks in result.hand_landmarks:
                 coord_landmarks = []
-                # Gets landmark coords and draws circles at each
+                # Gets landmark coords
                 for landmark in hand_landmarks:
                     cx, cy = int(landmark.x * w), int(landmark.y * h)
                     coord_landmarks.append((cx,cy))
-                    cv2.circle(frame, (cx, cy), 5, (191, 64, 191), cv2.FILLED)
+                    #cv2.circle(frame, (cx,cy),  5, (191, 64, 191), cv2.FILLED)
             
                 # Draws lines between each landmark based
                 for line in HAND_LINES:
                     list_start, list_end = line
                     point_start = coord_landmarks[list_start]
                     point_end = coord_landmarks[list_end]
-
-                    cv2.line(frame, point_end, point_start, (203, 242, 172), 3)
+    
+                    cv2.line(frame, point_end, point_start, (203, 242, 172), 2)
+                    cv2.circle(frame, coord_landmarks[list_end], 5, (191, 64, 191), cv2.FILLED)
     
 
     # Outputing text to feed
