@@ -51,6 +51,11 @@ with FaceLandmarker.create_from_options(options) as landmarker:
             x_coords = [landmark.x for landmark in face_landmarks]
             y_coords = [landmark.y for landmark in face_landmarks]
 
+            for x, y in zip(x_coords, y_coords):
+                px = int(x * frame_width)
+                py = int(y * frame_height)
+                cv2.circle(frame, (px, py), 1, (0, 255, 0), -1)
+
             # Convert normalized (0-1) coords to actual pixel coords
             x_min = int(min(x_coords) * frame_width)
             x_max = int(max(x_coords) * frame_width)
