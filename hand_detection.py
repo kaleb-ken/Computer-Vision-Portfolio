@@ -38,13 +38,14 @@ while True:
     timestamp_ms = int((time.time() - start_time) * 1000)
     result = detector.recognize_for_video(mp_image,timestamp_ms)
     
-    # Draws landmarks on detected hands
+    # Visualisations for detections
     hands_num = f"Hands detected: {len(result.hand_landmarks)}"
-    hv.draw_hand_struct(result, frame)
-    
+    hv.draw_hand_struct(result, frame) # Draws landmarks on detected hands
+    gesture = hv.detect_gesture(result)
+
     # Outputing text to feed
     cv2.putText(frame, hands_num, (40, 460), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness=4)
-    cv2.putText(frame, f"Gesture: ", (40, 430), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness=4)
+    cv2.putText(frame, f"Gesture: {gesture}", (40, 430), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness=4)
     
     # Displaying feed
     cv2.imshow('capture', frame)
