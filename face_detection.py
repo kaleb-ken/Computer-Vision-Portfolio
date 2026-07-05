@@ -66,20 +66,25 @@ with FaceLandmarker.create_from_options(options) as landmarker:
 
             # Draw the bounding box
             cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
-        for start_idx, end_idx in FACEMESH_TESSELATION:
-            start = face_landmarks[start_idx]
-            end = face_landmarks[end_idx]
+            for start_idx, end_idx in FACEMESH_TESSELATION:
+                start = face_landmarks[start_idx]
+                end = face_landmarks[end_idx]
 
-            x1 = int(start.x * frame_width)
-            y1 = int(start.y * frame_height)
-            x2 = int(end.x * frame_width)
-            y2 = int(end.y * frame_height)
+                x1 = int(start.x * frame_width)
+                y1 = int(start.y * frame_height)
+                x2 = int(end.x * frame_width)
+                y2 = int(end.y * frame_height)
 
-            cv2.line(frame, (x1, y1), (x2, y2), (231, 225, 93), 1)
+                cv2.line(frame, (x1, y1), (x2, y2), (231, 225, 93), 1)
+        
+
         #press q to quit
         cv2.imshow('Face Landmarker', frame)
         if cv2.waitKey(5) & 0xFF == ord('q'):
             break
+
+        #if cv2.waitKey(1) & 0xFF == ord('t'):
+
 
     cap.release()
     cv2.destroyAllWindows()
