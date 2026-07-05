@@ -64,14 +64,28 @@ def detect_gesture(result):
                 gesture = "Point"
         return gesture
             
+index = [(),()]
 # Draws on screen based on gesture input
 def point_free_draw(gesture, result, frame):
+    global index
     pen_down = False
     pen_x, pen_y = -1, -1
     if result.hand_landmarks:
         landmarks = get_landmark_coords(result, frame)
-        index = landmarks[8]
-        print(index)
-        if gesture == "Pointing_Up":
+        index[0]  = landmarks[8]
+
+        if gesture == "Point":
             pen_down = True
-            pen_x, pen_y = index        
+            pen_x, pen_y = index[0]    
+
+        elif index[0] != index[1]:
+            print("drawing")
+            if pen_down:
+                cv2.line(frame, (pen_x, pen_y), index[1], (0, 255, 0), 3)
+                pen_x, pen_y = index[1]
+        elif gesture != "Point":
+            pen_down = False
+            cv2.line(frame, (pen_x, pen_y), index[1], (0, 255, 0), 3) 
+        index[1] = index[0]   
+        
+
