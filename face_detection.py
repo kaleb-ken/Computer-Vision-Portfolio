@@ -25,6 +25,11 @@ options = FaceLandmarkerOptions(
     base_options=BaseOptions(model_asset_path=model_path),
     running_mode=VisionRunningMode.VIDEO)
 
+saved_instances = []  # list of numpy arrays, one per saved snapshot
+
+def landmarks_to_array(face_landmarks):
+    return np.array([[lm.x, lm.y, lm.z] for lm in face_landmarks], dtype=np.float32)
+
 with FaceLandmarker.create_from_options(options) as landmarker:
     cap = cv2.VideoCapture(0)
 
@@ -42,7 +47,7 @@ with FaceLandmarker.create_from_options(options) as landmarker:
         frame_timestamp_ms = int(time.time() * 1000)
 
         face_landmarker_result = landmarker.detect_for_video(mp_image, frame_timestamp_ms)
-        print(face_landmarker_result)  # prints out data for each detected face, including landmarks and bounding boxes
+        #print(face_landmarker_result)  # prints out data for each detected face, including landmarks and bounding boxes
 
         frame_height, frame_width = frame.shape[:2]
 
@@ -80,10 +85,21 @@ with FaceLandmarker.create_from_options(options) as landmarker:
 
         #press q to quit
         cv2.imshow('Face Landmarker', frame)
-        if cv2.waitKey(5) & 0xFF == ord('q'):
+        key = cv2.waitKey(5) & 0xFF
+        
+        if key == ord('q'):
             break
 
-        #if cv2.waitKey(1) & 0xFF == ord('t'):
+        if key == ord('t'):
+            if face_landmarker_result.face_landmarks:
+                # Convert landmarks to numpy array and save
+                landmarks_array = landmarks_to_array(face_landmarker_result.face_landmarks[0]) #currently only saving the first detected face
+                saved_instances.append(landmarks_array)
+                print(f"Saved instance {len(saved_instances)}")
+            else:
+                print("No face detected to save.")
+
+
 
 
     cap.release()
