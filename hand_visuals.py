@@ -6,10 +6,8 @@ Just to help decompose code
 """
 
 # Adding Dependencies
-import time
 import cv2
-import mediapipe as mp
-from mediapipe.tasks.python import vision
+import turtle
 
 # List of landmark connections
 HAND_LINES = [
@@ -20,6 +18,16 @@ HAND_LINES = [
     (0, 17), (17, 18), (18, 19), (19, 20), # Wrist to pinky
     (13, 17) # Pinky joint to Ring joint
 ]
+
+def get_landmark_coords(result, frame):
+    h, w, _ = frame.shape  # Get pixel dimensions of the camera feed
+    for hand_landmarks in result.hand_landmarks:
+        coord_landmarks = []
+        # Gets landmark coords
+        for landmark in hand_landmarks:
+            cx, cy = int(landmark.x * w), int(landmark.y * h)
+            coord_landmarks.append((cx,cy))
+        return coord_landmarks
 
 # Returns handedness for detected hands
 def handedness(result):
@@ -33,14 +41,7 @@ def handedness(result):
 
 def draw_hand_struct(result, frame):
     if result.hand_landmarks:
-        h, w, _ = frame.shape  # Get pixel dimensions of the camera feed
-        for hand_landmarks in result.hand_landmarks:
-            coord_landmarks = []
-            # Gets landmark coords
-            for landmark in hand_landmarks:
-                cx, cy = int(landmark.x * w), int(landmark.y * h)
-                coord_landmarks.append((cx,cy))
-        
+            coord_landmarks = get_landmark_coords(result, frame)
             # Draws lines between each landmark based
             for line in HAND_LINES:
                 list_start, list_end = line
@@ -63,3 +64,14 @@ def detect_gesture(result):
                 gesture = "Point"
         return gesture
             
+# Draws on screen based on gesture input
+def point_free_draw(gesture, result, frame):
+    pen_down = False
+    pen_x, pen_y = -1, -1
+    if result.hand_landmarks:
+        landmarks = get_landmark_coords(result, frame)
+        index = landmarks[8]
+        print(index)
+        if gesture == "Pointing_Up":
+            pen_down = True
+            pen_x, pen_y = index        
