@@ -42,7 +42,7 @@ while True:
     hands_num = f"Hands detected: {len(result.hand_landmarks)}"
     hv.draw_hand_struct(result, frame) # Draws landmarks on detected hands
     gesture = hv.detect_gesture(result)
-    hv.point_free_draw(result, frame)
+    hv.point_free_draw(gesture, result, frame)
 
     # Outputing text to feed
     cv2.putText(frame, hands_num, (40, 460), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness=4)
