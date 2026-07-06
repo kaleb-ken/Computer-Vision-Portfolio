@@ -7,7 +7,7 @@ Just to help decompose code
 
 # Adding Dependencies
 import cv2
-import turtle
+
 
 # List of landmark connections
 HAND_LINES = [
@@ -64,28 +64,20 @@ def detect_gesture(result):
                 gesture = "Point"
         return gesture
             
-index = [(),()]
 # Draws on screen based on gesture input
-def point_free_draw(gesture, result, frame):
-    global index
-    pen_down = False
-    pen_x, pen_y = -1, -1
+def point_free_draw(result, frame, canvas, prev_point):
     if result.hand_landmarks:
-        landmarks = get_landmark_coords(result, frame)
-        index[0]  = landmarks[8]
+        gesture = detect_gesture(result)
+        coords = get_landmark_coords(result, frame)
+        index = coords[8]
 
         if gesture == "Point":
-            pen_down = True
-            pen_x, pen_y = index[0]    
+            if prev_point is not None:
+                cv2.line(canvas, prev_point, index, (0, 255, 0), 3)
+            else:
+                cv2.circle(canvas, index, 3, (0, 255, 0), -1)
+            prev_point = index
+        else:
+            prev_point = None 
 
-        elif index[0] != index[1]:
-            print("drawing")
-            if pen_down:
-                cv2.line(frame, (pen_x, pen_y), index[1], (0, 255, 0), 3)
-                pen_x, pen_y = index[1]
-        elif gesture != "Point":
-            pen_down = False
-            cv2.line(frame, (pen_x, pen_y), index[1], (0, 255, 0), 3) 
-        index[1] = index[0]   
-        
-
+    return canvas, prev_point

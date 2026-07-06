@@ -1,12 +1,13 @@
 """
 hand_detection.py
 ======================
-Basic hand tracking program with landmark display
+Free hand drawing application
 
 """
 
 # Adding Dependencies
 import time
+import numpy as np
 import cv2
 import mediapipe as mp
 from mediapipe.tasks.python import vision
@@ -16,6 +17,10 @@ import hand_visuals as hv
 feed = cv2.VideoCapture(0)
 feed.set(cv2.CAP_PROP_FRAME_HEIGHT, value=500)
 feed.set(cv2.CAP_PROP_FRAME_WIDTH, value=500)
+
+# Variables for drawing functionality
+canvas = None
+prev_point = None
 
 # Setting up hand detection
 model_path = "./models/gesture_recognizer.task"
@@ -29,9 +34,9 @@ while True:
     ret, frame = feed.read()
     if not ret:
         break
-
-    # Converting colour config for mediapipe
-    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    if canvas is None: # Initilize the canvas as a black image
+        canvas = np.zeros_like(frame)
+    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Converting colour config for mediapipe
 
     # Detecting hand in video
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
@@ -42,7 +47,11 @@ while True:
     hands_num = f"Hands detected: {len(result.hand_landmarks)}"
     hv.draw_hand_struct(result, frame) # Draws landmarks on detected hands
     gesture = hv.detect_gesture(result)
-    hv.point_free_draw(gesture, result, frame)
+
+    # Draws onto screen when pointing
+    drawing, prev_point = hv.point_free_draw(result, frame, canvas, prev_point)
+    if drawing is not None:
+        frame = cv2.add(frame, drawing)
 
     # Outputing text to feed
     cv2.putText(frame, hands_num, (40, 460), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness=4)
