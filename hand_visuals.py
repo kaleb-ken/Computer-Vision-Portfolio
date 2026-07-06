@@ -7,7 +7,7 @@ Just to help decompose code
 
 # Adding Dependencies
 import cv2
-
+import numpy as np
 
 # List of landmark connections
 HAND_LINES = [
@@ -62,6 +62,8 @@ def detect_gesture(result):
                 gesture = "Open palm"
             if result.gestures[i][0].category_name == "Pointing_Up":
                 gesture = "Point"
+            if result.gestures[i][0].category_name == "Thumb_Down":
+                gesture = "Thumbs Down"
         return gesture
             
 # Draws on screen based on gesture input
@@ -77,6 +79,8 @@ def point_free_draw(result, frame, canvas, prev_point):
             else:
                 cv2.circle(canvas, index, 3, (0, 255, 0), -1)
             prev_point = index
+        elif gesture == "Thumbs Down":
+            canvas = None # Deletes drawing
         else:
             prev_point = None 
 

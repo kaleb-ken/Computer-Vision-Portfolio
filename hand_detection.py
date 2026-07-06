@@ -36,6 +36,7 @@ while True:
         break
     if canvas is None: # Initilize the canvas as a black image
         canvas = np.zeros_like(frame)
+    frame = cv2.flip(frame, 1)
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Converting colour config for mediapipe
 
     # Detecting hand in video
@@ -52,6 +53,8 @@ while True:
     drawing, prev_point = hv.point_free_draw(result, frame, canvas, prev_point)
     if drawing is not None:
         frame = cv2.add(frame, drawing)
+    else:
+        canvas = None # Deletes drawing
 
     # Outputing text to feed
     cv2.putText(frame, hands_num, (40, 460), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness=4)
