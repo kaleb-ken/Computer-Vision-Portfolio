@@ -30,8 +30,41 @@ saved_instances = []  # list of numpy arrays, one per saved snapshot
 def landmarks_to_array(face_landmarks):
     return np.array([[lm.x, lm.y, lm.z] for lm in face_landmarks], dtype=np.float32)
 
+def normalize_landmarks(points):
+    """
+    Translate landmarks so they're centered at the origin (using centroid),
+    then scale them so face size / distance-from-camera doesn't matter.
+    """
+    centroid = points.mean(axis=0)
+    centered = points - centroid
+
+    scale = np.sqrt((centered ** 2).sum(axis=1)).mean()
+    if scale == 0:
+        scale = 1e-6  # avoid divide-by-zero on a degenerate case
+
+    return centered / scale
+
+def get_eye_distance_px(face_landmarks, frame_width, frame_height, left_eye_idx=33, right_eye_idx=263):
+    """Raw eye-corner distance in pixels, before any normalization."""
+    left = face_landmarks[left_eye_idx]
+    right = face_landmarks[right_eye_idx]
+    left_px = np.array([left.x * frame_width, left.y * frame_height])
+    right_px = np.array([right.x * frame_width, right.y * frame_height])
+    return np.linalg.norm(right_px - left_px) #the linalg.norm function calculates the Euclidean distance between the two points
+
+def average_landmarks(instances):
+    """
+    Average a list of normalized landmark arrays into one reference.
+    All instances must have the same shape (478, 3).
+    """
+    if not instances:
+        raise ValueError("No instances to average.")
+    stacked = np.stack(instances, axis=0)  # 
+    return stacked.mean(axis=0)            # 
+
 with FaceLandmarker.create_from_options(options) as landmarker:
     cap = cv2.VideoCapture(0)
+    average = None
 
     if not cap.isOpened():
         print("Error: Could not open webcam.")
@@ -82,7 +115,7 @@ with FaceLandmarker.create_from_options(options) as landmarker:
 
                 cv2.line(frame, (x1, y1), (x2, y2), (231, 225, 93), 1)
         
-
+        
         #press q to quit
         cv2.imshow('Face Landmarker', frame)
         key = cv2.waitKey(5) & 0xFF
@@ -92,15 +125,33 @@ with FaceLandmarker.create_from_options(options) as landmarker:
 
         if key == ord('t'):
             if face_landmarker_result.face_landmarks:
-                # Convert landmarks to numpy array and save
-                landmarks_array = landmarks_to_array(face_landmarker_result.face_landmarks[0]) #currently only saving the first detected face
-                saved_instances.append(landmarks_array)
-                print(f"Saved instance {len(saved_instances)}")
+                current_face = face_landmarker_result.face_landmarks[0]
+                eye_dist_px = get_eye_distance_px(current_face, frame_width, frame_height)
+
+                MIN_EYE_DIST = 100   #I think this is a good minimum distance for the eyes to be apart in pixels
+                MAX_EYE_DIST = 135
+
+                if MIN_EYE_DIST <= eye_dist_px <= MAX_EYE_DIST:
+                    raw_points = landmarks_to_array(current_face)
+                    normalized_points = normalize_landmarks(raw_points)
+                    saved_instances.append(normalized_points)
+
+                    average = average_landmarks(saved_instances)
+
+                    print(f"Saved instance {len(saved_instances)} (eye dist: {eye_dist_px:.1f}px)")
+                elif eye_dist_px < MIN_EYE_DIST:
+                    print(f"Too far from camera (eye dist: {eye_dist_px:.1f}px). Move closer.")
+                else:
+                    print(f"Too close to camera (eye dist: {eye_dist_px:.1f}px). Move back.")
             else:
                 print("No face detected to save.")
 
-
-
-
     cap.release()
     cv2.destroyAllWindows()
+
+    if average is not None:
+        save_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reference_face.npy")
+        np.save(save_path, average)
+        print(f"Saved reference (averaged from {len(saved_instances)} instances) to {save_path}")
+    else:
+        print("No instances saved — nothing written to disk.")
