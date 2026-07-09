@@ -11,10 +11,24 @@ from face_mesh_connections import FACEMESH_TESSELATION, FACEMESH_CONTOURS, FACEM
 import numpy as np
 import matplotlib.pyplot as plt
 
+#constants for landmark indices
+FOREHEAD_IDX = 10
+CHIN_IDX = 152
+NOSE_TOP_IDX = 6
+NOSE_BOTTOM_IDX = 2
+NOSE_LEFT_IDX = 129
+NOSE_RIGHT_IDX = 358
+LEFT_EYE_IDX = 33
+RIGHT_EYE_IDX = 263
+
 #better path finding
 model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", "face_landmarker.task")
 reference_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reference_face.npy")
 reference = np.load(reference_path) if os.path.exists(reference_path) else None
+
+reference_raw_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reference_face_raw.npy")
+reference_raw = np.load(reference_raw_path) if os.path.exists(reference_raw_path) else None 
+
 if reference is None:
     print("No reference_face.npy found, please save 5 references using the 't' key before comparing faces.")
 
@@ -30,6 +44,7 @@ options = FaceLandmarkerOptions(
     running_mode=VisionRunningMode.VIDEO)
 
 saved_instances = []  # list of numpy arrays, one per saved snapshot
+saved_instances_raw = [] # list of raw landmark arrays, one per saved snapshot
 
 def landmarks_to_array(face_landmarks):
     return np.array([[lm.x, lm.y, lm.z] for lm in face_landmarks], dtype=np.float32)
@@ -77,9 +92,25 @@ def compare_landmarks(a, b):
     diffs = np.linalg.norm(a - b, axis=1)
     return diffs.mean()
 
+def get_face_proportions(points, left_eye_idx=33, right_eye_idx=263):
+    """
+    Scale-invariant facial ratios (eye distance, nose length, nose width),
+    all expressed relative to forehead-to-chin distance (face height).
+    """
+    face_height = np.linalg.norm(points[CHIN_IDX] - points[FOREHEAD_IDX])
+    if face_height == 0:
+        face_height = 1e-6
+
+    eye_distance = np.linalg.norm(points[right_eye_idx] - points[left_eye_idx]) / face_height
+    nose_length = np.linalg.norm(points[NOSE_BOTTOM_IDX] - points[NOSE_TOP_IDX]) / face_height
+    nose_width = np.linalg.norm(points[NOSE_RIGHT_IDX] - points[NOSE_LEFT_IDX]) / face_height
+
+    return np.array([eye_distance, nose_length, nose_width])
+
 with FaceLandmarker.create_from_options(options) as landmarker:
     cap = cv2.VideoCapture(0)
     average = None
+    average_raw = None
 
     if not cap.isOpened():
         print("Error: Could not open webcam.")
@@ -147,12 +178,24 @@ with FaceLandmarker.create_from_options(options) as landmarker:
             #cv2.putText(frame, f"Eye dist: {live_eye_dist:.1f}px", (x_min, y_max + 25),
                         #cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
 
-            if reference is not None:
-                raw_points = landmarks_to_array(face_landmarks)
-                live_normalized = normalize_landmarks(raw_points)
-                score = compare_landmarks(live_normalized, reference)
+            if reference is not None and reference_raw is not None:
 
-                THRESHOLD = 0.05  # Lower = more similar
+                SCORE_CONSTANT = 0.1  # how much proportions matter in the final score
+                THRESHOLD = 0.05 # Lower = more similar
+
+                raw_points = landmarks_to_array(face_landmarks)
+                normalized_points = normalize_landmarks(raw_points)
+
+                shape_score = compare_landmarks(normalized_points, reference)
+
+                live_props = get_face_proportions(raw_points)
+                ref_props = get_face_proportions(reference_raw)
+                proportion_score = np.linalg.norm(live_props - ref_props)
+
+                score = shape_score + SCORE_CONSTANT * proportion_score 
+
+                print(f"shape: {shape_score:.4f}  prop: {proportion_score:.4f}  total: {score:.4f}")
+
                 if score < THRESHOLD:
                     label = f"MATCH ({score:.3f})"
                     color = (0, 255, 0)
@@ -161,7 +204,7 @@ with FaceLandmarker.create_from_options(options) as landmarker:
                     color = (0, 0, 255)
 
                 cv2.putText(frame, label, (x_min, y_min - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2) 
         
         
         #press q to quit
@@ -182,8 +225,10 @@ with FaceLandmarker.create_from_options(options) as landmarker:
                     raw_points = landmarks_to_array(current_face)
                     normalized_points = normalize_landmarks(raw_points)
                     saved_instances.append(normalized_points)
+                    saved_instances_raw.append(raw_points)
 
                     average = average_landmarks(saved_instances)
+                    average_raw = average_landmarks(saved_instances_raw)
 
                     print(f"Saved instance {len(saved_instances)} (eye dist: {eye_dist_px:.1f}px)")
                 elif eye_dist_px < MIN_EYE_DIST:
@@ -199,6 +244,7 @@ with FaceLandmarker.create_from_options(options) as landmarker:
     if average is not None:
         save_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reference_face.npy")
         np.save(save_path, average)
+        np.save(reference_raw_path, average_raw)
         print(f"Saved reference (averaged from {len(saved_instances)} instances) to {save_path}")
     else:
         print("No instances saved — nothing written to disk.")
