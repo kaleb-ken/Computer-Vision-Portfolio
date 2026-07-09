@@ -34,7 +34,7 @@ saved_instances = []  # list of numpy arrays, one per saved snapshot
 def landmarks_to_array(face_landmarks):
     return np.array([[lm.x, lm.y, lm.z] for lm in face_landmarks], dtype=np.float32)
 
-def normalize_landmarks(points):
+def normalize_landmarks(points, left_eye_idx=33, right_eye_idx=263):
     """
     Translate landmarks so they're centered at the origin (using centroid),
     then scale them so face size / distance-from-camera doesn't matter.
@@ -42,11 +42,14 @@ def normalize_landmarks(points):
     centroid = points.mean(axis=0)
     centered = points - centroid
 
-    scale = np.sqrt((centered ** 2).sum(axis=1)).mean()
-    if scale == 0:
-        scale = 1e-6  # avoid divide-by-zero on a degenerate case
+    left_eye = centered[left_eye_idx]
+    right_eye = centered[right_eye_idx]
+    eye_distance = np.linalg.norm(right_eye - left_eye)
 
-    return centered / scale
+    if eye_distance == 0:
+        eye_distance = 1e-6
+
+    return centered / eye_distance
 
 def get_eye_distance_px(face_landmarks, frame_width, frame_height, left_eye_idx=33, right_eye_idx=263):
     """Raw eye-corner distance in pixels, before any normalization."""
