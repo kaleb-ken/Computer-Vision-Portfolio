@@ -13,6 +13,10 @@ import matplotlib.pyplot as plt
 
 #better path finding
 model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", "face_landmarker.task")
+reference_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reference_face.npy")
+reference = np.load(reference_path) if os.path.exists(reference_path) else None
+if reference is None:
+    print("No reference_face.npy found, please save 5 references using the 't' key before comparing faces.")
 
 #shortcut for mediapipe classes
 BaseOptions = mp.tasks.BaseOptions
@@ -62,6 +66,14 @@ def average_landmarks(instances):
     stacked = np.stack(instances, axis=0)  # 
     return stacked.mean(axis=0)            # 
 
+def compare_landmarks(a, b):
+    """
+    Mean per-point Euclidean distance between two normalized landmark sets.
+    Lower = more similar.
+    """
+    diffs = np.linalg.norm(a - b, axis=1)
+    return diffs.mean()
+
 with FaceLandmarker.create_from_options(options) as landmarker:
     cap = cv2.VideoCapture(0)
     average = None
@@ -83,6 +95,9 @@ with FaceLandmarker.create_from_options(options) as landmarker:
         #print(face_landmarker_result)  # prints out data for each detected face, including landmarks and bounding boxes
 
         frame_height, frame_width = frame.shape[:2]
+
+        MIN_EYE_DIST = 100   #I think this is a good minimum distance for the eyes to be apart in pixels
+        MAX_EYE_DIST = 135
 
         # Loop over each detected face (usually just one, but supports more)
         for face_landmarks in face_landmarker_result.face_landmarks:
@@ -114,6 +129,36 @@ with FaceLandmarker.create_from_options(options) as landmarker:
                 y2 = int(end.y * frame_height)
 
                 cv2.line(frame, (x1, y1), (x2, y2), (231, 225, 93), 1)
+            
+
+            live_eye_dist = get_eye_distance_px(face_landmarks, frame_width, frame_height)
+            if live_eye_dist < MIN_EYE_DIST:
+                cv2.putText(frame, f"Too far from camera (eye dist: {live_eye_dist:.1f}px). Move closer.", (x_min, y_max + 25),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+            elif live_eye_dist > MAX_EYE_DIST:
+                cv2.putText(frame, f"Too close to camera (eye dist: {live_eye_dist:.1f}px). Move back.", (x_min, y_max + 25),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+            else:
+                cv2.putText(frame, f"Good distance from camera (eye dist: {live_eye_dist:.1f}px).", (x_min, y_max + 25),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+            #cv2.putText(frame, f"Eye dist: {live_eye_dist:.1f}px", (x_min, y_max + 25),
+                        #cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+
+            if reference is not None:
+                raw_points = landmarks_to_array(face_landmarks)
+                live_normalized = normalize_landmarks(raw_points)
+                score = compare_landmarks(live_normalized, reference)
+
+                THRESHOLD = 0.05  # Lower = more similar
+                if score < THRESHOLD:
+                    label = f"MATCH ({score:.3f})"
+                    color = (0, 255, 0)
+                else:
+                    label = f"NO MATCH ({score:.3f})"
+                    color = (0, 0, 255)
+
+                cv2.putText(frame, label, (x_min, y_min - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
         
         
         #press q to quit
@@ -128,8 +173,7 @@ with FaceLandmarker.create_from_options(options) as landmarker:
                 current_face = face_landmarker_result.face_landmarks[0]
                 eye_dist_px = get_eye_distance_px(current_face, frame_width, frame_height)
 
-                MIN_EYE_DIST = 100   #I think this is a good minimum distance for the eyes to be apart in pixels
-                MAX_EYE_DIST = 135
+                
 
                 if MIN_EYE_DIST <= eye_dist_px <= MAX_EYE_DIST:
                     raw_points = landmarks_to_array(current_face)
