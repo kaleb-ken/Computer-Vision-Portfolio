@@ -64,6 +64,12 @@ def detect_gesture(result):
                 gesture = "Point"
             if result.gestures[i][0].category_name == "Thumb_Down":
                 gesture = "Thumbs Down"
+            if result.gestures[i][0].category_name == "Closed_Fist":
+                gesture = "Closed Fist"
+            if result.gestures[i][0].category_name == "Victory":
+                gesture = "Victory"
+            if result.gestures[i][0].category_name == "ILoveYou":
+                gesture = "I Love You"
         return gesture
             
 # Draws on screen based on gesture input
