@@ -49,7 +49,7 @@ while True:
     hv.draw_hand_struct(result, frame) # Draws landmarks on detected hands
     gesture = hv.detect_gesture(result)
 
-    # Draws onto screen when pointing
+    # Draws onto screen when pointing - Comment out this section to remove drawing function
     drawing, prev_point = hv.point_free_draw(result, frame, canvas, prev_point)
     if drawing is not None:
         frame = cv2.add(frame, drawing)
