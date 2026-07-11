@@ -1,250 +1,194 @@
-
 import cv2
 import time
 import os
+import multiprocessing as mp_process
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
-from mediapipe.tasks.python.vision import drawing_utils
-from mediapipe.tasks.python.vision import drawing_styles
-from face_mesh_connections import FACEMESH_TESSELATION, FACEMESH_CONTOURS, FACEMESH_IRISES
+from face_mesh_connections import FACEMESH_TESSELATION
 import numpy as np
-import matplotlib.pyplot as plt
-
-#constants for landmark indices
-FOREHEAD_IDX = 10
-CHIN_IDX = 152
-NOSE_TOP_IDX = 6
-NOSE_BOTTOM_IDX = 2
-NOSE_LEFT_IDX = 129
-NOSE_RIGHT_IDX = 358
-LEFT_EYE_IDX = 33
-RIGHT_EYE_IDX = 263
+import face_recognition
 
 #better path finding
 model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", "face_landmarker.task")
-reference_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reference_face.npy")
-reference = np.load(reference_path) if os.path.exists(reference_path) else None
+reference_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reference_encoding.npy")
 
-reference_raw_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reference_face_raw.npy")
-reference_raw = np.load(reference_raw_path) if os.path.exists(reference_raw_path) else None 
+MATCH_THRESHOLD = 0.4  # face_recognition's typical default; lower = stricter
+DOWNSCALE = 0.25  # run face_recognition on a quarter-size frame for speed
 
-if reference is None:
-    print("No reference_face.npy found, please save 5 references using the 't' key before comparing faces.")
 
-#shortcut for mediapipe classes
-BaseOptions = mp.tasks.BaseOptions
-FaceLandmarker = mp.tasks.vision.FaceLandmarker
-FaceLandmarkerOptions = mp.tasks.vision.FaceLandmarkerOptions
-VisionRunningMode = mp.tasks.vision.RunningMode
-
-#Creates a face landmarker object with the specified model and options
-options = FaceLandmarkerOptions(
-    base_options=BaseOptions(model_asset_path=model_path),
-    running_mode=VisionRunningMode.VIDEO)
-
-saved_instances = []  # list of numpy arrays, one per saved snapshot
-saved_instances_raw = [] # list of raw landmark arrays, one per saved snapshot
-
-def landmarks_to_array(face_landmarks):
-    return np.array([[lm.x, lm.y, lm.z] for lm in face_landmarks], dtype=np.float32)
-
-def normalize_landmarks(points, left_eye_idx=33, right_eye_idx=263):
+def face_recognition_process(frame_queue, result_queue, reference_encoding):
     """
-    Translate landmarks so they're centered at the origin (using centroid),
-    then scale them so face size / distance-from-camera doesn't matter.
+    Runs in a completely separate process (its own Python interpreter, its
+    own GIL), so face_recognition's computation can never block the main
+    process's video loop, regardless of whether dlib releases the GIL.
+    Always grabs the newest available frame, dropping any it falls behind on.
     """
-    centroid = points.mean(axis=0)
-    centered = points - centroid
+    while True:
+        frame_to_process = None
+        # drain the queue, keeping only the most recent frame
+        while not frame_queue.empty():
+            item = frame_queue.get()
+            if item is None:  # sentinel value used to signal shutdown
+                return
+            frame_to_process = item
 
-    left_eye = centered[left_eye_idx]
-    right_eye = centered[right_eye_idx]
-    eye_distance = np.linalg.norm(right_eye - left_eye)
+        if frame_to_process is None:
+            time.sleep(0.01)
+            continue
 
-    if eye_distance == 0:
-        eye_distance = 1e-6
+        small_frame = cv2.resize(frame_to_process, (0, 0), fx=DOWNSCALE, fy=DOWNSCALE)
+        face_locations_small = face_recognition.face_locations(small_frame) #get the locations of the faces in the frame
+        face_encodings = face_recognition.face_encodings(small_frame, face_locations_small) #get the encodings of the faces in the frame
 
-    return centered / eye_distance
-
-def get_eye_distance_px(face_landmarks, frame_width, frame_height, left_eye_idx=33, right_eye_idx=263):
-    """Raw eye-corner distance in pixels, before any normalization."""
-    left = face_landmarks[left_eye_idx]
-    right = face_landmarks[right_eye_idx]
-    left_px = np.array([left.x * frame_width, left.y * frame_height])
-    right_px = np.array([right.x * frame_width, right.y * frame_height])
-    return np.linalg.norm(right_px - left_px) #the linalg.norm function calculates the Euclidean distance between the two points
-
-def average_landmarks(instances):
-    """
-    Average a list of normalized landmark arrays into one reference.
-    All instances must have the same shape (478, 3).
-    """
-    if not instances:
-        raise ValueError("No instances to average.")
-    stacked = np.stack(instances, axis=0)  # 
-    return stacked.mean(axis=0)            # 
-
-def compare_landmarks(a, b):
-    """
-    Mean per-point Euclidean distance between two normalized landmark sets.
-    Lower = more similar.
-    """
-    diffs = np.linalg.norm(a - b, axis=1)
-    return diffs.mean()
-
-def get_face_proportions(points, left_eye_idx=33, right_eye_idx=263):
-    """
-    Scale-invariant facial ratios (eye distance, nose length, nose width),
-    all expressed relative to forehead-to-chin distance (face height).
-    """
-    face_height = np.linalg.norm(points[CHIN_IDX] - points[FOREHEAD_IDX])
-    if face_height == 0:
-        face_height = 1e-6
-
-    eye_distance = np.linalg.norm(points[right_eye_idx] - points[left_eye_idx]) / face_height
-    nose_length = np.linalg.norm(points[NOSE_BOTTOM_IDX] - points[NOSE_TOP_IDX]) / face_height
-    nose_width = np.linalg.norm(points[NOSE_RIGHT_IDX] - points[NOSE_LEFT_IDX]) / face_height
-
-    return np.array([eye_distance, nose_length, nose_width])
-
-with FaceLandmarker.create_from_options(options) as landmarker:
-    cap = cv2.VideoCapture(0)
-    average = None
-    average_raw = None
-
-    if not cap.isOpened():
-        print("Error: Could not open webcam.")
-        exit()
-
-    while cap.isOpened():
-        success, frame = cap.read()
-        if not success:
-            break
-
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
-        frame_timestamp_ms = int(time.time() * 1000)
-
-        face_landmarker_result = landmarker.detect_for_video(mp_image, frame_timestamp_ms)
-        #print(face_landmarker_result)  # prints out data for each detected face, including landmarks and bounding boxes
-
-        frame_height, frame_width = frame.shape[:2]
-
-        MIN_EYE_DIST = 100   #I think this is a good minimum distance for the eyes to be apart in pixels
-        MAX_EYE_DIST = 135
-
-        # Loop over each detected face (usually just one, but supports more)
-        for face_landmarks in face_landmarker_result.face_landmarks:
-            # Pull out all x and y coords for this face
-            x_coords = [landmark.x for landmark in face_landmarks]
-            y_coords = [landmark.y for landmark in face_landmarks]
-
-            # Draw each landmark as a small circle on the frame
-            #for x, y in zip(x_coords, y_coords):
-                #px = int(x * frame_width)
-                #py = int(y * frame_height)
-                #cv2.circle(frame, (px, py), 1, (0, 255, 0), -1)
-
-            # Convert normalized (0-1) coords to actual pixel coords
-            x_min = int(min(x_coords) * frame_width)
-            x_max = int(max(x_coords) * frame_width)
-            y_min = int(min(y_coords) * frame_height)
-            y_max = int(max(y_coords) * frame_height)
-
-            # Draw the bounding box
-            cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
-            for start_idx, end_idx in FACEMESH_TESSELATION:
-                start = face_landmarks[start_idx]
-                end = face_landmarks[end_idx]
-
-                x1 = int(start.x * frame_width)
-                y1 = int(start.y * frame_height)
-                x2 = int(end.x * frame_width)
-                y2 = int(end.y * frame_height)
-
-                cv2.line(frame, (x1, y1), (x2, y2), (231, 225, 93), 1)
-            
-
-            live_eye_dist = get_eye_distance_px(face_landmarks, frame_width, frame_height)
-            if live_eye_dist < MIN_EYE_DIST:
-                cv2.putText(frame, f"Too far from camera (eye dist: {live_eye_dist:.1f}px). Move closer.", (x_min, y_max + 25),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-            elif live_eye_dist > MAX_EYE_DIST:
-                cv2.putText(frame, f"Too close to camera (eye dist: {live_eye_dist:.1f}px). Move back.", (x_min, y_max + 25),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-            else:
-                cv2.putText(frame, f"Good distance from camera (eye dist: {live_eye_dist:.1f}px).", (x_min, y_max + 25),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-            #cv2.putText(frame, f"Eye dist: {live_eye_dist:.1f}px", (x_min, y_max + 25),
-                        #cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
-
-            if reference is not None and reference_raw is not None:
-
-                SCORE_CONSTANT = 0.1  # how much proportions matter in the final score
-                THRESHOLD = 0.05 # Lower = more similar
-
-                raw_points = landmarks_to_array(face_landmarks)
-                normalized_points = normalize_landmarks(raw_points)
-
-                shape_score = compare_landmarks(normalized_points, reference)
-
-                live_props = get_face_proportions(raw_points)
-                ref_props = get_face_proportions(reference_raw)
-                proportion_score = np.linalg.norm(live_props - ref_props)
-
-                score = shape_score + SCORE_CONSTANT * proportion_score 
-
-                print(f"shape: {shape_score:.4f}  prop: {proportion_score:.4f}  total: {score:.4f}")
-
-                if score < THRESHOLD:
-                    label = f"MATCH ({score:.3f})"
-                    color = (0, 255, 0)
+        # scale the face locations back up to the original frame size
+        scale = int(1 / DOWNSCALE)
+        face_locations = [
+            (top * scale, right * scale, bottom * scale, left * scale)
+            for (top, right, bottom, left) in face_locations_small
+        ]
+        # for each face, compare it to the reference encoding and determine if it's a match
+        for (top, right, bottom, left), encoding in zip(face_locations, face_encodings):
+            label, color = None, (255, 255, 255)
+            if reference_encoding is not None:
+                distance = face_recognition.face_distance([reference_encoding], encoding)[0]
+                if distance < MATCH_THRESHOLD:
+                    label, color = f"MATCH ({distance:.3f})", (0, 255, 0)
                 else:
-                    label = f"NO MATCH ({score:.3f})"
-                    color = (0, 0, 255)
+                    label, color = f"NO MATCH ({distance:.3f})", (0, 0, 255)
 
-                cv2.putText(frame, label, (x_min, y_min - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2) 
-        
-        
-        #press q to quit
-        cv2.imshow('Face Landmarker', frame)
-        key = cv2.waitKey(5) & 0xFF
-        
-        if key == ord('q'):
-            break
+            # keep only the latest result in the queue too
+            while not result_queue.empty():
+                try:
+                    result_queue.get_nowait()
+                except Exception:
+                    break
+            result_queue.put((encoding, (top, right, bottom, left), label, color))
 
-        if key == ord('t'):
-            if face_landmarker_result.face_landmarks:
-                current_face = face_landmarker_result.face_landmarks[0]
-                eye_dist_px = get_eye_distance_px(current_face, frame_width, frame_height)
+#main function that runs the face detection and recognition
+def main():
+    reference_encoding = np.load(reference_path) if os.path.exists(reference_path) else None
+    if reference_encoding is None:
+        print("No reference_encoding.npy found, please save some references using the 't' key before comparing faces.")
 
+    #shortcut for mediapipe classes
+    BaseOptions = mp.tasks.BaseOptions
+    FaceLandmarker = mp.tasks.vision.FaceLandmarker
+    FaceLandmarkerOptions = mp.tasks.vision.FaceLandmarkerOptions
+    VisionRunningMode = mp.tasks.vision.RunningMode
+
+    #Creates a face landmarker object with the specified model and options
+    options = FaceLandmarkerOptions(
+        base_options=BaseOptions(model_asset_path=model_path),
+        running_mode=VisionRunningMode.VIDEO)
+
+    saved_encodings = []  # list of 128-number face_recognition encodings
+
+    # --- set up the separate process and its communication queues ---
+    frame_queue = mp_process.Queue(maxsize=1)
+    result_queue = mp_process.Queue(maxsize=1)
+    worker = mp_process.Process(
+        target=face_recognition_process,
+        args=(frame_queue, result_queue, reference_encoding),
+        daemon=True
+    )
+    worker.start() #worker process that runs the face recognition in a separate process to avoid blocking the main thread
+
+    # main loop: capture frames, run MediaPipe, and display results 
+    current_encoding = None
+    last_box = None
+    last_label = None
+    last_color = (255, 255, 255)
+
+
+    with FaceLandmarker.create_from_options(options) as landmarker:
+        cap = cv2.VideoCapture(0)
+        average_encoding = None
+
+        if not cap.isOpened():
+            print("Error: Could not open webcam.")
+            exit()
+
+        while cap.isOpened():
+            success, frame = cap.read()
+            if not success:
+                break
                 
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
+            frame_timestamp_ms = int(time.time() * 1000)
 
-                if MIN_EYE_DIST <= eye_dist_px <= MAX_EYE_DIST:
-                    raw_points = landmarks_to_array(current_face)
-                    normalized_points = normalize_landmarks(raw_points)
-                    saved_instances.append(normalized_points)
-                    saved_instances_raw.append(raw_points)
+            # MediaPipe: used only for drawing the mesh visuals 
+            face_landmarker_result = landmarker.detect_for_video(mp_image, frame_timestamp_ms)
+            frame_height, frame_width = frame.shape[:2]
 
-                    average = average_landmarks(saved_instances)
-                    average_raw = average_landmarks(saved_instances_raw)
+            # track MediaPipe's real-time box position for label placement 
+            mediapipe_box = None
+            for face_landmarks in face_landmarker_result.face_landmarks:
+                x_coords = [landmark.x for landmark in face_landmarks]
+                y_coords = [landmark.y for landmark in face_landmarks]
 
-                    print(f"Saved instance {len(saved_instances)} (eye dist: {eye_dist_px:.1f}px)")
-                elif eye_dist_px < MIN_EYE_DIST:
-                    print(f"Too far from camera (eye dist: {eye_dist_px:.1f}px). Move closer.")
+                x_min = int(min(x_coords) * frame_width)
+                x_max = int(max(x_coords) * frame_width)
+                y_min = int(min(y_coords) * frame_height)
+                y_max = int(max(y_coords) * frame_height)
+                mediapipe_box = (x_min, y_min, x_max, y_max)
+
+                cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
+                for start_idx, end_idx in FACEMESH_TESSELATION:
+                    start = face_landmarks[start_idx]
+                    end = face_landmarks[end_idx]
+                    x1, y1 = int(start.x * frame_width), int(start.y * frame_height)
+                    x2, y2 = int(end.x * frame_width), int(end.y * frame_height)
+                    cv2.line(frame, (x1, y1), (x2, y2), (231, 225, 93), 1)
+
+            # --- hand the latest frame to the worker process (non-blocking) 
+            if frame_queue.empty():
+                try:
+                    frame_queue.put_nowait(rgb_frame)
+                except Exception:
+                    pass
+
+            # pick up the latest result if one is available (non-blocking)
+            if not result_queue.empty():
+                try:
+                    current_encoding, last_box, last_label, last_color = result_queue.get_nowait()
+                except Exception:
+                    pass
+
+            if mediapipe_box is not None and last_label is not None:
+                x_min, y_min, x_max, y_max = mediapipe_box
+                cv2.putText(frame, last_label, (x_min, y_min - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, last_color, 2)
+
+            #press q to quit
+            cv2.imshow('Face Landmarker', frame)
+            key = cv2.waitKey(5) & 0xFF
+
+            if key == ord('q'):
+                break
+
+            if key == ord('t'):
+                if current_encoding is not None:
+                    saved_encodings.append(current_encoding)
+                    average_encoding = np.mean(saved_encodings, axis=0)
+                    print(f"Saved instance {len(saved_encodings)}")
                 else:
-                    print(f"Too close to camera (eye dist: {eye_dist_px:.1f}px). Move back.")
-            else:
-                print("No face detected to save.")
+                    print("No face detected to save.")
 
-    cap.release()
-    cv2.destroyAllWindows()
+        cap.release()
+        cv2.destroyAllWindows()
 
-    if average is not None:
-        save_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reference_face.npy")
-        np.save(save_path, average)
-        np.save(reference_raw_path, average_raw)
-        print(f"Saved reference (averaged from {len(saved_instances)} instances) to {save_path}")
-    else:
-        print("No instances saved — nothing written to disk.")
+        # signal the worker process to stop, then wait for it to exit cleanly
+        frame_queue.put(None)
+        worker.join(timeout=2)
+
+        if average_encoding is not None:
+            np.save(reference_path, average_encoding)
+            print(f"Saved reference (averaged from {len(saved_encodings)} instances) to {reference_path}")
+        else:
+            print("No instances saved — nothing written to disk.")
+
+
+if __name__ == "__main__":
+    main()
