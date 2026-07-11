@@ -1,5 +1,5 @@
 """
-hand_detection.py
+hand_instrument.py
 ======================
 Basic hand tracking program with landmark display
 
