@@ -5,15 +5,13 @@ A portfolio of 3 chuds in development of computer vision for authentication and 
 
 HOW TO USE:
 
-1. Press t to save an instance of yourself, all your face data will be saved in a file called reference_face_raw.npy and reference_face.npy, 
+1. Press t to save an instance of yourself, all your face data will be encoded and saved in a file called           reference_encoding.npy.
 
     Make sure you are within distance of the camera, there will be a indication for this below your face.
-    
-    A normalised version of your face and all the raw data of your face will be saved, these will be used in the three unique ways to detect your face. 
 
-    Eye distance, Face proportion and nose length and width, 
+    Eye distance will be uses to track how close you are to your face, you must be within this margin because any closer or farther, the code will have trouble distingusihing you from other people. 
     
-    Save atleast 5-10 instances, prefferably 10, slight movements and looking at the camera will help alot
+    Save atleast 5-10 instances, prefferably 10, (very) slight movements and looking at the camera will help alot
 
 2. Then press q, this will save this data and close it
 
