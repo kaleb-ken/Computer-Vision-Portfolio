@@ -67,6 +67,15 @@ def face_recognition_process(frame_queue, result_queue, reference_encoding):
 
 #main function that runs the face detection and recognition
 def main():
+
+    def get_eye_distance_px(face_landmarks, frame_width, frame_height, left_eye_idx=33, right_eye_idx=263):
+        """Raw eye-corner distance in pixels, before any normalization."""
+        left = face_landmarks[left_eye_idx]
+        right = face_landmarks[right_eye_idx]
+        left_px = np.array([left.x * frame_width, left.y * frame_height])
+        right_px = np.array([right.x * frame_width, right.y * frame_height])
+        return np.linalg.norm(right_px - left_px) #the linalg.norm function calculates the Euclidean distance between the two points
+
     reference_encoding = np.load(reference_path) if os.path.exists(reference_path) else None
     if reference_encoding is None:
         print("No reference_encoding.npy found, please save some references using the 't' key before comparing faces.")
@@ -99,7 +108,8 @@ def main():
     last_box = None
     last_label = None
     last_color = (255, 255, 255)
-
+    MIN_EYE_DIST = 100 
+    MAX_EYE_DIST = 130  
 
     with FaceLandmarker.create_from_options(options) as landmarker:
         cap = cv2.VideoCapture(0)
@@ -142,6 +152,17 @@ def main():
                     x2, y2 = int(end.x * frame_width), int(end.y * frame_height)
                     cv2.line(frame, (x1, y1), (x2, y2), (231, 225, 93), 1)
 
+                live_eye_dist = get_eye_distance_px(face_landmarks, frame_width, frame_height)
+                if live_eye_dist < MIN_EYE_DIST:
+                    cv2.putText(frame, f"Too far from camera (eye dist: {live_eye_dist:.1f}px). Move closer.", (x_min, y_max + 25),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                elif live_eye_dist > MAX_EYE_DIST:
+                    cv2.putText(frame, f"Too close to camera (eye dist: {live_eye_dist:.1f}px). Move back.", (x_min, y_max + 25),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                else:
+                    cv2.putText(frame, f"Good distance from camera (eye dist: {live_eye_dist:.1f}px).", (x_min, y_max + 25),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+
             # --- hand the latest frame to the worker process (non-blocking) 
             if frame_queue.empty():
                 try:
@@ -170,9 +191,19 @@ def main():
 
             if key == ord('t'):
                 if current_encoding is not None:
-                    saved_encodings.append(current_encoding)
-                    average_encoding = np.mean(saved_encodings, axis=0)
-                    print(f"Saved instance {len(saved_encodings)}")
+                    eye_dist_px = get_eye_distance_px(face_landmarker_result.face_landmarks[0], frame_width, frame_height)
+                    
+                    if MIN_EYE_DIST <= eye_dist_px <= MAX_EYE_DIST:
+                        
+                        saved_encodings.append(current_encoding)
+                        average_encoding = np.mean(saved_encodings, axis=0)
+
+                        print(f"Saved instance {len(saved_encodings)} (eye dist: {eye_dist_px:.1f}px)")
+                    elif eye_dist_px < MIN_EYE_DIST:
+                        print(f"Too far from camera (eye dist: {eye_dist_px:.1f}px). Move closer.")
+                    else:
+                        print(f"Too close to camera (eye dist: {eye_dist_px:.1f}px). Move back.")
+
                 else:
                     print("No face detected to save.")
 
