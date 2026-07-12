@@ -12,7 +12,7 @@ import cv2
 import mediapipe as mp
 from mediapipe.tasks.python import vision
 import hand_functions.hand_visuals as hv
-import hand_functions.hand_instruments as hi
+#import hand_functions.hand_instruments as hi
 
 # Setting up capture
 feed = cv2.VideoCapture(0)
@@ -52,14 +52,14 @@ while True:
     handedness = hv.handedness(result)
 
     # ----------Code for arduino----------
-    hi.buzz_detection(handedness)
+    #hi.buzz_detection(handedness)
 
     # ----------Code for drawing----------
-    # drawing, prev_point = hv.point_free_draw(result, frame, canvas, prev_point)
-    # if drawing is not None:
-    #     frame = cv2.add(frame, drawing)
-    # else:
-    #     canvas = None # Deletes drawing
+    drawing, prev_point = hv.point_free_draw(result, frame, canvas, prev_point)
+    if drawing is not None:
+        frame = cv2.add(frame, drawing)
+    else:
+        canvas = None # Deletes drawing
 
     # Outputing text to feed
     cv2.putText(frame, hands_num, (40, 460), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness=4)
@@ -67,9 +67,16 @@ while True:
     
     # Displaying feed
     cv2.imshow('capture', frame)
+    
+    key = cv2.waitKey(5) & 0xFF # Detects keyboard input
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    if key == ord('t'):
+        cv2.imwrite("filename.jpg", canvas)
+
+    if key == ord('q'): # Quits application
         break
+
+    
 
 feed.release()
 cv2.destroyAllWindows()

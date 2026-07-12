@@ -1,1 +1,0 @@
-#ts gotta be a virtual environment for this to work. like python 3.11, idk how to do virtual enviorments 
