@@ -1,3 +1,5 @@
+from xml.parsers.expat import model
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -9,6 +11,7 @@ import timm
 import matplotlib.pyplot as plt #for data viz
 import pandas as pd 
 import numpy as np
+from tqdm.notebook import tqdm
 
 
 #Definding the dataset---------------------
@@ -43,7 +46,78 @@ Dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
 
 #pytorch model-----------------------------------
 
+class SimpleHandClassifier(nn.Module):
+    def __init__(self, num_classes):
+        super(SimpleHandClassifier, self).__init__()
+        self.basemodel = timm.create_model('efficientnet_b0', pretrained=True)
+        self.basemodel.fc = nn.Linear(self.basemodel.fc.in_features, num_classes) #change the last layer to match the number of classes
 
+        enet_out_size = 1280
+
+        #make a classifier
+        self.classifier = nn.Linear(enet_out_size, num_classes)
+    
+    def forward(self, x):
+
+        x = self.features(x)
+        output = self.classifier(x)
+        return output
+    
+#Training loop ---------------------------
+
+#Loss Function
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+train_folder = "./data/train"
+val_folder = "./data/val"
+test_folder = "./data/test"
+
+train_dataset = HandSignDataset(train_folder, transform=transform)
+val_dataset = HandSignDataset(val_folder, transform=transform)
+test_dataset = HandSignDataset(test_folder, transform=transform)
+
+train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
+test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+
+#so we have our datasets and our loop here is the real training loop.
+
+NUM_EPOCHS = 5 #CAN BE CHANGED TO WHATEVER
+train_loss, val_losses = [], []
+
+model = SimpleHandClassifier(num_classes=len(dataset.classes)) #should be the number of classes in the dataset, eg num_classes = 3
+#model.to(device) #if using GPU, uncomment this line
+for epoch in range(NUM_EPOCHS):
+    model.train()
+    running_loss = 0.0
+    for images, labels in train_loader:
+        #inputs, labels = inputs.to(torch.device), labels.to(torch.device) #if using GPU, uncomment this line
+
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = criterion(outputs, labels) #calculating loss
+        loss.backward() #back propagation
+        optimizer.step() 
+        running_loss += loss.item() * images.size(0)
+    
+    epoch_loss = running_loss / len(train_loader.dataset)
+    train_loss.append(epoch_loss)
+
+    # Validation
+    model.eval()
+    val_running_loss = 0.0
+    with torch.no_grad():
+        for images, labels in val_loader:
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            val_running_loss += loss.item() * images.size(0)
+    
+    val_epoch_loss = val_running_loss / len(val_loader.dataset)
+    val_losses.append(val_epoch_loss)
+
+    print(f'Epoch {epoch+1}/{NUM_EPOCHS}, Train Loss: {epoch_loss:.4f}, Val Loss: {val_epoch_loss:.4f}')
 
 
 
