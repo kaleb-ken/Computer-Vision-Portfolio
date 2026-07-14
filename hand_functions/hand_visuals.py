@@ -21,13 +21,15 @@ HAND_LINES = [
 
 def get_landmark_coords(result, frame):
     h, w, _ = frame.shape  # Get pixel dimensions of the camera feed
+    hands_coords = []
     for hand_landmarks in result.hand_landmarks:
         coord_landmarks = []
         # Gets landmark coords
         for landmark in hand_landmarks:
             cx, cy = int(landmark.x * w), int(landmark.y * h)
             coord_landmarks.append((cx,cy))
-        return coord_landmarks
+        hands_coords.append(coord_landmarks)
+    return hands_coords
 
 # Returns handedness for detected hands
 def handedness(result):
@@ -39,17 +41,18 @@ def handedness(result):
             detected[1] = "detected"
     return detected
 
+# Draws lines between each landmark based
 def draw_hand_struct(result, frame):
     if result.hand_landmarks:
-            coord_landmarks = get_landmark_coords(result, frame)
-            # Draws lines between each landmark based
+        coord_landmarks = get_landmark_coords(result, frame)
+        for coords in coord_landmarks:
             for line in HAND_LINES:
                 list_start, list_end = line
-                point_start = coord_landmarks[list_start]
-                point_end = coord_landmarks[list_end]
+                point_start = coords[list_start]
+                point_end = coords[list_end]
     
                 cv2.line(frame, point_end, point_start, (203, 242, 172), 2)
-                cv2.circle(frame, coord_landmarks[list_end], 5, (191, 64, 191), cv2.FILLED)
+                cv2.circle(frame, coords[list_end], 5, (191, 64, 191), cv2.FILLED)
 
 # Returns detected gesture as text
 def detect_gesture(result):
