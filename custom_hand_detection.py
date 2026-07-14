@@ -67,8 +67,8 @@ class SimpleHandClassifier(nn.Module):
 
 #Loss Function
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-
+optimizer = optim.Adam(model.parameters(), lr=0.001) #learnign rate can be changed to whatever you want, 0.001 is a good starting point
+'''
 train_folder = "./data/train"
 val_folder = "./data/val"
 test_folder = "./data/test"
@@ -80,6 +80,7 @@ test_dataset = HandSignDataset(test_folder, transform=transform)
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+'''
 
 #so we have our datasets and our loop here is the real training loop.
 
