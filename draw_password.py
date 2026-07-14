@@ -36,7 +36,7 @@ while True:
     if not ret:
         break
     if canvas is None: # Initilize the canvas as a black image
-        canvas = np.zeros((100, 100, 3), dtype=np.uint8)
+        canvas = np.zeros_like(frame)
     frame = cv2.flip(frame, 1)
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Converting colour config for mediapipe
 
@@ -63,7 +63,7 @@ while True:
     # Outputing text to feed
     cv2.putText(frame, hands_num, (40, 460), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness=4)
     cv2.putText(frame, f"Gesture: {gesture}", (40, 430), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness=4)
-    cv2.rectangle(frame, (100,100), (200,200), (255, 255, 255), 2, lineType=None)
+    #cv2.rectangle(canvas, (100,100), (200,200), (255, 255, 255), 2, lineType=None)
     
     # Displaying feed
     cv2.imshow('capture', frame)

@@ -80,7 +80,7 @@ def point_free_draw(result, frame, canvas, prev_point):
     if result.hand_landmarks:
         gesture = detect_gesture(result)
         coords = get_landmark_coords(result, frame)
-        index = coords[8]
+        index = coords[0][8]
 
         if gesture == "Point":
             if prev_point is not None:
