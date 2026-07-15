@@ -5,7 +5,7 @@ import multiprocessing as mp_process
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
-from face_mesh_connections import FACEMESH_TESSELATION
+from face_functions.face_mesh_connections import FACEMESH_TESSELATION
 import numpy as np
 import face_recognition
 
