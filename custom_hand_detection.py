@@ -36,7 +36,7 @@ dataset = HandSignDataset(data_dir) #NEED TO GET DATA FAHHH
 target_to_class = {v: k for k, v in ImageFolder(data_dir).class_to_idx.items()} #dictionary that links each number with a correct label
 
 transform = transforms.Compose([
-    transforms.Resize((128, 128)),
+    transforms.Resize((500, 500)),
     transforms.ToTensor(),
 ])
 
