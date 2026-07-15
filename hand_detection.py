@@ -12,9 +12,11 @@ import cv2
 import mediapipe as mp
 from mediapipe.tasks.python import vision
 import hand_functions.hand_visuals as hv
+import hand_functions.hand_data as hd
 #import hand_functions.hand_instruments as hi
 
 # Setting up capture
+canvas = None
 feed = cv2.VideoCapture(0)
 feed.set(cv2.CAP_PROP_FRAME_HEIGHT, value=500)
 feed.set(cv2.CAP_PROP_FRAME_WIDTH, value=500)
@@ -31,6 +33,8 @@ while True:
     ret, frame = feed.read()
     if not ret:
         break
+    if canvas is None: # Initilize the canvas as a black image
+        canvas = np.zeros_like(frame)
     frame = cv2.flip(frame, 1)
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Converting colour config for mediapipe
 
@@ -59,7 +63,8 @@ while True:
 
     if key == ord('q'): # Quits application
         break
-
+    if key == ord('t'):
+        hd.screenshot_hand(canvas, result)
     
 
 feed.release()
