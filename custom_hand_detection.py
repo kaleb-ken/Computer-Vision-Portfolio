@@ -84,7 +84,7 @@ test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 #so we have our datasets and our loop here is the real training loop.
 
-NUM_EPOCHS = 5 #CAN BE CHANGED TO WHATEVER
+NUM_EPOCHS = 5 #CAN BE CHANGED TO WHATEVERrrr
 train_loss, val_losses = [], []
 
 model = SimpleHandClassifier(num_classes=len(dataset.classes)) #should be the number of classes in the dataset, eg num_classes = 3
