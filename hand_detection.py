@@ -64,7 +64,7 @@ while True:
     if key == ord('q'): # Quits application
         break
     if key == ord('t'):
-        hd.screenshot_hand(canvas, result)
+        canvas = hd.screenshot_hand(canvas, result)
     
 
 feed.release()
