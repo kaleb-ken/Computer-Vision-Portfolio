@@ -36,7 +36,8 @@ while True:
     # Initilize the canvas as a black image
     if model_input is None: 
         model_input = np.zeros_like(frame)
-    frame = cv2.flip(frame, 1) #
+    
+    frame = cv2.flip(frame, 1) 
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Converting colour config for mediapipe
 
     # Detecting hand in video
