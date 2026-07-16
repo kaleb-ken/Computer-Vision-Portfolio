@@ -21,3 +21,7 @@ def screenshot_hand(frame, result):
     
     cv2.imwrite(full_path, frame)
     return None
+
+# 
+def save_landmark_data(result):
+

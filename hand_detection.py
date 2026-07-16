@@ -12,11 +12,11 @@ import cv2
 import mediapipe as mp
 from mediapipe.tasks.python import vision
 import hand_functions.hand_visuals as hv
-import hand_functions.hand_data as hd
+#import hand_functions.hand_data as hd
 #import hand_functions.hand_instruments as hi
 
 # Setting up capture
-canvas = None
+model_input = None
 feed = cv2.VideoCapture(0)
 feed.set(cv2.CAP_PROP_FRAME_HEIGHT, value=500)
 feed.set(cv2.CAP_PROP_FRAME_WIDTH, value=500)
@@ -33,9 +33,10 @@ while True:
     ret, frame = feed.read()
     if not ret:
         break
-    if canvas is None: # Initilize the canvas as a black image
-        canvas = np.zeros_like(frame)
-    frame = cv2.flip(frame, 1)
+    # Initilize the canvas as a black image
+    if model_input is None: 
+        model_input = np.zeros_like(frame)
+    frame = cv2.flip(frame, 1) #
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Converting colour config for mediapipe
 
     # Detecting hand in video
@@ -46,6 +47,7 @@ while True:
     # Visualisations for detections
     hands_num = f"Hands detected: {len(result.hand_landmarks)}"
     hv.draw_hand_struct(result, frame) # Draws landmarks on detected hands
+    hv.draw_hand_struct(result, model_input) # Draws landmarks on detected hands
     gesture = hv.detect_gesture(result)
     handedness = hv.handedness(result)
 
@@ -57,14 +59,16 @@ while True:
     cv2.putText(frame, f"Gesture: {gesture}", (40, 430), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness=4)
     
     # Displaying feed
-    cv2.imshow('capture', frame)
+    cv2.imshow('capture', frame) # Standard Video
+    cv2.imshow('Model Input', model_input) # Gesture Model Input
+    canvas = None
     
     key = cv2.waitKey(5) & 0xFF # Detects keyboard input
 
     if key == ord('q'): # Quits application
         break
-    if key == ord('t'):
-        canvas = hd.screenshot_hand(canvas, result)
+    #if key == ord('t'):
+        #canvas = hd.screenshot_hand(canvas, result)
     
 
 feed.release()
