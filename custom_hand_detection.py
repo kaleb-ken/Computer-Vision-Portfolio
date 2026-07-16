@@ -11,7 +11,7 @@ import timm
 import matplotlib.pyplot as plt #for data viz
 import pandas as pd 
 import numpy as np
-from tqdm.notebook import tqdm
+import tqdm
 
 
 #Definding the dataset---------------------
@@ -39,7 +39,7 @@ transform = transforms.Compose([
     transforms.ToTensor(),
 ])
 
-dataset = HandSignDataset(data_dir, transform=transform) #NEED TO GET DATA FAHHH
+dataset = HandSignDataset(data_dir, transform=transform) #NEED TO GET DATA FAHHH, also this is torch.ToTensor converting
 
 #batching the dataset now
 
@@ -80,7 +80,7 @@ test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 #so we have our datasets and our loop here is the real training loop.
 
-NUM_EPOCHS = 5 #CAN BE CHANGED TO WHATEVERrrrrrrrrrrrrr r r nfjenqfj
+NUM_EPOCHS = 10 #CAN BE CHANGED TO WHATEVER
 train_loss, val_losses = [], []
 
 model = SimpleHandClassifier(num_classes=len(dataset.classes)) #should be the number of classes in the dataset, eg num_classes = 3
@@ -93,16 +93,16 @@ optimizer = optim.Adam(model.parameters(), lr=0.001) #learnign rate can be chang
 for epoch in range(NUM_EPOCHS):
     model.train()
     running_loss = 0.0
-    for images, labels in train_loader:
+    progress_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{NUM_EPOCHS}")
+    for images, labels in progress_bar:
         #inputs, labels = inputs.to(torch.device), labels.to(torch.device) #if using GPU, uncomment this line
-
-
         optimizer.zero_grad()
         outputs = model(images)
         loss = criterion(outputs, labels) #calculating loss
         loss.backward() #back propagation
         optimizer.step() 
         running_loss += loss.item() * images.size(0)
+        progress_bar.set_postfix({'loss': loss.item()})  # Update the progress bar with the current loss
     
     epoch_loss = running_loss / len(train_loader.dataset)
     train_loss.append(epoch_loss)
@@ -110,11 +110,13 @@ for epoch in range(NUM_EPOCHS):
     # Validation
     model.eval()
     val_running_loss = 0.0
+    val_progress_bar = tqdm(val_loader, desc=f"Validation Epoch {epoch+1}/{NUM_EPOCHS}")
     with torch.no_grad():
         for images, labels in val_loader:
             outputs = model(images)
             loss = criterion(outputs, labels)
             val_running_loss += loss.item() * images.size(0)
+            val_progress_bar.set_postfix({'val_loss': loss.item()})  # Update the progress bar with the current validation loss
     
     val_epoch_loss = val_running_loss / len(val_loader.dataset)
     val_losses.append(val_epoch_loss)
