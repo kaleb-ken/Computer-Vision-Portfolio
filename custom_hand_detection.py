@@ -31,7 +31,6 @@ class HandSignDataset(Dataset):
     
 
 data_dir = "./data"
-dataset = HandSignDataset(data_dir) #NEED TO GET DATA FAHHH
 
 target_to_class = {v: k for k, v in ImageFolder(data_dir).class_to_idx.items()} #dictionary that links each number with a correct label
 
@@ -39,6 +38,8 @@ transform = transforms.Compose([
     transforms.Resize((500, 500)),
     transforms.ToTensor(),
 ])
+
+dataset = HandSignDataset(data_dir, transform=transform) #NEED TO GET DATA FAHHH
 
 #batching the dataset now
 
@@ -49,26 +50,21 @@ Dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
 class SimpleHandClassifier(nn.Module):
     def __init__(self, num_classes):
         super(SimpleHandClassifier, self).__init__()
-        self.basemodel = timm.create_model('efficientnet_b0', pretrained=True)
-        self.basemodel.fc = nn.Linear(self.basemodel.fc.in_features, num_classes) #change the last layer to match the number of classes
+        self.basemodel = timm.create_model('efficientnet_b0', pretrained=True, num_classes=0) #num_classes=0 strips the head, returns pooled features
 
-        enet_out_size = 1280
+        enet_out_size = self.basemodel.num_features
 
         #make a classifier
         self.classifier = nn.Linear(enet_out_size, num_classes)
     
     def forward(self, x):
 
-        x = self.features(x)
+        x = self.basemodel(x)
         output = self.classifier(x)
         return output
     
 #Training loop ---------------------------
 
-#Loss Function
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001) #learnign rate can be changed to whatever you want, 0.001 is a good starting point
-'''
 train_folder = "./data/train"
 val_folder = "./data/val"
 test_folder = "./data/test"
@@ -80,7 +76,7 @@ test_dataset = HandSignDataset(test_folder, transform=transform)
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
-'''
+
 
 #so we have our datasets and our loop here is the real training loop.
 
@@ -89,6 +85,11 @@ train_loss, val_losses = [], []
 
 model = SimpleHandClassifier(num_classes=len(dataset.classes)) #should be the number of classes in the dataset, eg num_classes = 3
 #model.to(device) #if using GPU, uncomment this line
+
+#Loss Function
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=0.001) #learnign rate can be changed to whatever you want, 0.001 is a good starting point
+
 for epoch in range(NUM_EPOCHS):
     model.train()
     running_loss = 0.0
@@ -119,8 +120,3 @@ for epoch in range(NUM_EPOCHS):
     val_losses.append(val_epoch_loss)
 
     print(f'Epoch {epoch+1}/{NUM_EPOCHS}, Train Loss: {epoch_loss:.4f}, Val Loss: {val_epoch_loss:.4f}')
-
-
-
-
-
