@@ -6,12 +6,11 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 import torchvision.transforms as transforms
 from torchvision.datasets import ImageFolder
-import timm
 
 import matplotlib.pyplot as plt #for data viz
 import pandas as pd 
 import numpy as np
-import tqdm
+from tqdm import tqdm
 
 
 #Definding the dataset---------------------
@@ -50,16 +49,22 @@ Dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
 class SimpleHandClassifier(nn.Module):
     def __init__(self, num_classes):
         super(SimpleHandClassifier, self).__init__()
-        self.basemodel = timm.create_model('efficientnet_b0', pretrained=True, num_classes=0) #num_classes=0 strips the head, returns pooled features
-
-        enet_out_size = self.basemodel.num_features
+        self.conv = nn.Sequential(
+            nn.Conv2d(3, 16, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Conv2d(16, 32, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+        )
 
         #make a classifier
-        self.classifier = nn.Linear(enet_out_size, num_classes)
+        self.classifier = nn.Linear(32 * 125 * 125, num_classes) #500 -> 250 -> 125 after two maxpools
     
     def forward(self, x):
 
-        x = self.basemodel(x)
+        x = self.conv(x)
+        x = x.view(x.size(0), -1)
         output = self.classifier(x)
         return output
     
