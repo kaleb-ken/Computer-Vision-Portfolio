@@ -13,7 +13,11 @@ import mediapipe as mp
 from mediapipe.tasks.python import vision
 import hand_functions.hand_visuals as hv
 import hand_functions.hand_data as hd
+import hand_functions.kalman_filter as kf
 #import hand_functions.hand_instruments as hi
+
+# Set up optimization
+kalman = kf.kalman()
 
 # Setting up capture
 model_input = None
@@ -24,7 +28,12 @@ feed.set(cv2.CAP_PROP_FRAME_WIDTH, value=500)
 # Setting up hand detection
 model_path = "./models/gesture_recognizer.task"
 base_options = mp.tasks.BaseOptions(model_asset_path=model_path)
-options = vision.GestureRecognizerOptions(base_options=base_options, num_hands=2, running_mode=vision.RunningMode.VIDEO)
+options = vision.GestureRecognizerOptions(
+    base_options=base_options, 
+    num_hands=2, 
+    min_hand_detection_confidence=0.8,
+    min_hand_presence_confidence=0.8, 
+    running_mode=vision.RunningMode.VIDEO)
 detector = vision.GestureRecognizer.create_from_options(options)
 start_time = time.time()
 
@@ -45,6 +54,9 @@ while True:
     timestamp_ms = int((time.time() - start_time) * 1000)
     result = detector.recognize_for_video(mp_image,timestamp_ms)
     
+    predicted = kalman.predict()
+    pred_x, pred_y = int(predicted[0]), int(predicted[1])
+
     # Visualisations for detections
     hands_num = f"Hands detected: {len(result.hand_landmarks)}"
     hv.draw_hand_struct(result, frame) # Draws landmarks on detected hands
@@ -69,7 +81,7 @@ while True:
     if key == ord('q'): # Quits application
         break
     if key == ord('t'): # Saves hand data as image and csv
-        model_input = hd.screenshot_hand(frame, result)
+        #model_input = hd.screenshot_hand(frame, result)
         hd.save_landmark_data(result)
 
 

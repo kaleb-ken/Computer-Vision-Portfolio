@@ -28,5 +28,7 @@ def screenshot_hand(frame, result):
 # Stores landmark data in csv file
 def save_landmark_data(result):
     time_stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    for landmark in result['Landmarks']:
-        print(landmark)
+    data = []
+    for landmark in result.hand_landmarks:
+        for coords in landmark:
+            data.append({"landmark":"1", "X":coords.x, "Y": coords.y, "Z": coords.z})
