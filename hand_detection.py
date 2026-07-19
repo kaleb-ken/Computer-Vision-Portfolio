@@ -61,16 +61,19 @@ while True:
     
     # Displaying feed
     cv2.imshow('capture', frame) # Standard Video
-    cv2.imshow('Model Input', model_input) # Gesture Model Input
+    cv2.imshow('Model Input', model_input) # Standard Video
     model_input = None
-    
+
     key = cv2.waitKey(5) & 0xFF # Detects keyboard input
 
     if key == ord('q'): # Quits application
         break
     if key == ord('t'): # Saves hand data as image and csv
-        model_input = hd.screenshot_hand(model_input, result)
-        hd.save_landmark_data(result)
+        model_input = hd.screenshot_hand(frame, result)
+        #hd.save_landmark_data(result)
+
+    
+    
     
 
 feed.release()
