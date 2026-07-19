@@ -22,6 +22,8 @@ def screenshot_hand(frame, result):
     cv2.imwrite(full_path, frame)
     return None
 
-# 
+# Stores landmark data in csv file
 def save_landmark_data(result):
-
+    time_stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    for landmark in result['Landmarks']:
+        print(landmark)

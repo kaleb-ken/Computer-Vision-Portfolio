@@ -12,7 +12,7 @@ import cv2
 import mediapipe as mp
 from mediapipe.tasks.python import vision
 import hand_functions.hand_visuals as hv
-#import hand_functions.hand_data as hd
+import hand_functions.hand_data as hd
 #import hand_functions.hand_instruments as hi
 
 # Setting up capture
@@ -62,14 +62,15 @@ while True:
     # Displaying feed
     cv2.imshow('capture', frame) # Standard Video
     cv2.imshow('Model Input', model_input) # Gesture Model Input
-    canvas = None
+    model_input = None
     
     key = cv2.waitKey(5) & 0xFF # Detects keyboard input
 
     if key == ord('q'): # Quits application
         break
-    #if key == ord('t'):
-        #canvas = hd.screenshot_hand(canvas, result)
+    if key == ord('t'): # Saves hand data as image and csv
+        model_input = hd.screenshot_hand(model_input, result)
+        hd.save_landmark_data(result)
     
 
 feed.release()
