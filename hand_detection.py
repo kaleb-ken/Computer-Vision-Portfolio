@@ -70,10 +70,9 @@ while True:
         break
     if key == ord('t'): # Saves hand data as image and csv
         model_input = hd.screenshot_hand(frame, result)
-        #hd.save_landmark_data(result)
+        hd.save_landmark_data(result)
 
-    
-    
+
     
 
 feed.release()
