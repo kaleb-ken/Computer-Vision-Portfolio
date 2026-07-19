@@ -7,7 +7,7 @@ Helps optimise hand detection code
 import cv2
 import numpy as np
 
-
+# Set up kalmans filter
 def kalman():
 
     kalman_filter = cv2.KalmanFilter(4,2)

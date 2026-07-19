@@ -54,6 +54,7 @@ while True:
     timestamp_ms = int((time.time() - start_time) * 1000)
     result = detector.recognize_for_video(mp_image,timestamp_ms)
     
+    # Kalman filter for optimised detection (Still working on)
     predicted = kalman.predict()
     pred_x, pred_y = int(predicted[0]), int(predicted[1])
 
