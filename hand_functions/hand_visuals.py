@@ -16,7 +16,7 @@ HAND_LINES = [
     (5, 9), (9, 10), (10, 11), (11, 12), # Index joint to Middle
     (9, 13), (13, 14), (14, 15), (15, 16), # Middle joint to Ring
     (0, 17), (17, 18), (18, 19), (19, 20), # Wrist to pinky
-    (13, 17), (5, 2) # Pinky joint to Ring joint
+    (13, 17) # Pinky joint to Ring joint
 ]
 
 def get_landmark_coords(result, frame):
