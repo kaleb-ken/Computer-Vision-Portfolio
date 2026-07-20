@@ -67,24 +67,31 @@ LANDMARK_NUM = 21
 INITIAL_FREQ = 30.0 
 MIN_CUTOFF = 0.5     
 BETA = 0.05  
-for i in range(LANDMARK_NUM): # Creates filter object for each coord on each landmark
-    landmark_filters[i] = {
-        "x" : EuroOne(freq=INITIAL_FREQ, mincutoff=MIN_CUTOFF, beta=BETA),
-        "y" : EuroOne(freq=INITIAL_FREQ, mincutoff=MIN_CUTOFF, beta=BETA),
-        "z" : EuroOne(freq=INITIAL_FREQ, mincutoff=MIN_CUTOFF, beta=BETA)
+# --- Creates filters for each landmark in each hand -----------------
+def create_landmark_filters():
+    return {
+        i: {
+            "x": EuroOne(freq=INITIAL_FREQ, mincutoff=MIN_CUTOFF, beta=BETA),
+            "y": EuroOne(freq=INITIAL_FREQ, mincutoff=MIN_CUTOFF, beta=BETA),
+            "z": EuroOne(freq=INITIAL_FREQ, mincutoff=MIN_CUTOFF, beta=BETA)
+        }
+        for i in range(LANDMARK_NUM)
     }
 
 def optimise_landmarks(result):
     time_stamp = time.time()
     if result.hand_landmarks:
         # Loop through every detected point
-        for hand in result.hand_landmarks:
-            for idx, landmark in enumerate(hand):
-                if idx in landmark_filters:
+        for h_index, hand in enumerate(result.hand_landmarks):
+            if h_index not in landmark_filters:
+                landmark_filters[h_index] = create_landmark_filters()
+            
+            for landmark_index, landmark in enumerate(hand):
+                if landmark_index in landmark_filters:
                     # Filter each axis independently using the current time
-                    filtered_x = landmark_filters[idx]['x'](landmark.x, time_stamp)
-                    filtered_y = landmark_filters[idx]['y'](landmark.y, time_stamp)
-                    filtered_z = landmark_filters[idx]['z'](landmark.z, time_stamp)
+                    filtered_x = landmark_filters[h_index][landmark_index]['x'](landmark.x, time_stamp)
+                    filtered_y = landmark_filters[h_index][landmark_index]['y'](landmark.y, time_stamp)
+                    filtered_z = landmark_filters[h_index][landmark_index]['z'](landmark.z, time_stamp)
 
                     # Overwrite raw coordinates with smooth coordinates
                     landmark.x = filtered_x
