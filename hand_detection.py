@@ -52,6 +52,7 @@ while True:
     # --- One Euro filter -----------------
     result = OE.optimise_landmarks(result)
 
+    
     # --- Visualisations for detections -----------------
     hands_num = f"Hands detected: {len(result.hand_landmarks)}"
     hv.draw_hand_struct(result, frame) # Draws landmarks on detected hands
@@ -77,7 +78,12 @@ while True:
         break
     if key == ord('t'): # Saves hand data as image and csv
         #model_input = hd.screenshot_hand(frame, result)
-        hd.save_landmark_data(result)
+        hd.save_landmark_data(result.hand_world_landmarks)
+        
+   
+        
+        
+       
 
 
     
