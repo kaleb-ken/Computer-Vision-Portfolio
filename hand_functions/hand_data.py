@@ -11,8 +11,10 @@ import os
 import csv
 import cv2
 import hand_functions.hand_visuals as hv
-SCREENSHOT_FOLDER = "hand_image_data"
-CSV_FOLDER = "landmark_data"
+
+# --- CHANGE FILE PATH WHEN CREATIN NEW DATASETS ------------------
+SCREENSHOT_FOLDER = "hand_image_data/train_folder/Middle_finger"
+CSV_FOLDER = "landmark_data/single_hand/training/middle_finger.csv" 
 
 # --- Screenshots a image of the hand structure ---------------
 def screenshot_hand(frame, result):
@@ -27,32 +29,37 @@ def screenshot_hand(frame, result):
     cv2.imwrite(full_path, model_input) # Saves file
     return None
 
+def init_csv_file(path):
+    file_header = []
+    for i in range(21):
+        file_header.extend([f"X{i}", f"Y{i}", f"Z{i}"])
+    file_header.append("Gesture")
+    
+
+    with open(path, "w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(file_header)
+
 # --- Stores landmark data in csv file ---------------
-def save_landmark_data(world_hands):
+def save_landmark_data(world_hands, gesture):
+    """ 
+        Currently only saves 1 hand landmarks.
+        If wanting to add logic for 2 hands, will 
+        change lator.
+    """
+    # Creates file
+    if not os.path.exists(CSV_FOLDER):
+        init_csv_file(CSV_FOLDER)
+
     # Saves current frames landmarks 
     data = []
-    for h_index, hand in enumerate(world_hands):
-        for landmark_index, landmark in enumerate(hand):
-            data.append({"Hand" : h_index, "Landmark": landmark_index, "X":landmark.x, "Y": landmark.y, "Z": landmark.z})
-    
-    # Field definitions for csv file
-    dict_field = [
-        'Hand',
-        'Landmark',
-        'X',
-        'Y',
-        'Z'
-    ]
-    
-    # Creates file path
-    time_stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    file_name = f"landmark_data_{time_stamp}.csv"
-    full_path = os.path.join(CSV_FOLDER, file_name)
+    for hand in world_hands:
+        for landmark in hand:
+            data.extend([landmark.x, landmark.y, landmark.z])
+        data.append(gesture)
 
     # Writes to csv
-    with open(full_path, "w", newline="", encoding="utf-8") as file:
-        writer = csv.DictWriter(file, fieldnames=dict_field)
-        writer.writeheader()
-        writer.writerows(data)
+    with open(CSV_FOLDER, "a", newline="") as file:
+        csv.writer(file).writerow(data)
 
        

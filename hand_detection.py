@@ -16,6 +16,9 @@ import hand_functions.hand_data as hd
 import hand_functions.one_euro as OE
 #import hand_functions.hand_instruments as hi
 
+# --- Change when creating a new dataset ---
+TRAINING_GESTURE = "middle_finger"
+
 # --- Setting up capture -----------------
 model_input = None
 feed = cv2.VideoCapture(0)
@@ -78,7 +81,7 @@ while True:
         break
     if key == ord('t'): # Saves hand data as image and csv
         #model_input = hd.screenshot_hand(frame, result)
-        hd.save_landmark_data(result.hand_world_landmarks)
+        hd.save_landmark_data(result.hand_world_landmarks, TRAINING_GESTURE)
         
    
         
