@@ -52,7 +52,7 @@ def draw_hand_struct(result, frame):
                 point_end = coords[list_end]
     
                 cv2.line(frame, point_end, point_start, (203, 242, 172), 2)
-                cv2.circle(frame, coords[list_end], 5, (191, 64, 191), cv2.FILLED)
+                cv2.circle(frame, coords[list_end], 3, (191, 64, 191), cv2.FILLED)
 
 # Returns detected gesture as text
 def detect_gesture(result):
