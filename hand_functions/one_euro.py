@@ -89,7 +89,7 @@ def optimise_landmarks(result):
                 landmark_filters[h_index] = create_landmark_filters()
             
             for landmark_index, landmark in enumerate(hand):
-                if landmark_index in landmark_filters:
+                if landmark_index in landmark_filters[h_index]:
                     # Filter each axis independently using the current time
                     filtered_x = landmark_filters[h_index][landmark_index]['x'](landmark.x, time_stamp)
                     filtered_y = landmark_filters[h_index][landmark_index]['y'](landmark.y, time_stamp)
