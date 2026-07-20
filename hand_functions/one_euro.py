@@ -10,7 +10,7 @@ Link: https://github.com/casiez/OneEuroFilter/blob/main/python/OneEuroFilter/One
 import math
 import time
 
-# Set up low pass filter
+# --- Set up low pass filter ---------------
 class LowPassFilter:
     def __init__(self, alpha):
         self.__y = None
@@ -26,7 +26,7 @@ class LowPassFilter:
         self.__y = s
         return s
 
-# Optimised filter  
+# --- Optimised filter ---------------  
 class EuroOne:
     def __init__(self, freq, mincutoff=1.0, beta=0.0, dcutoff=1.0):
         self.__freq = freq
@@ -77,6 +77,7 @@ def create_landmark_filters():
         }
         for i in range(LANDMARK_NUM)
     }
+
 last_num_hands = 0
 # --- Optimises each hands landmark detections ----------------
 # Stops jitters and good for overlap

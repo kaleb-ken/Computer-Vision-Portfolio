@@ -14,7 +14,7 @@ import hand_functions.hand_visuals as hv
 SCREENSHOT_FOLDER = "hand_image_data"
 CSV_FOLDER = "landmark_data"
 
-# Screenshots a image of the hand structure
+# --- Screenshots a image of the hand structure ---------------
 def screenshot_hand(frame, result):
     model_input = np.zeros_like(frame) # Creates a black canvas the size of screen
     hv.draw_hand_struct(result, model_input) # Draws hand structure
@@ -35,6 +35,7 @@ def save_landmark_data(world_hands):
         for landmark_index, landmark in enumerate(hand):
             data.append({"Hand" : h_index, "Landmark": landmark_index, "X":landmark.x, "Y": landmark.y, "Z": landmark.z})
     
+    # Field definitions for csv file
     dict_field = [
         'Hand',
         'Landmark',
