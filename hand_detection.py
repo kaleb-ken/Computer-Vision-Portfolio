@@ -49,7 +49,7 @@ while True:
     timestamp_ms = int((time.time() - start_time) * 1000)
     result = detector.recognize_for_video(mp_image,timestamp_ms)
     
-    # --- One Euro filter for optimised detection (Still working on) -----------------
+    # --- One Euro filter -----------------
     result = OE.optimise_landmarks(result)
 
     # --- Visualisations for detections -----------------

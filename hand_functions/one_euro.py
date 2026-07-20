@@ -78,6 +78,8 @@ def create_landmark_filters():
         for i in range(LANDMARK_NUM)
     }
 
+# --- Optimises each hands landmark detections ----------------
+# Stops jitters and good for overlap, still bugs with wrist joint tho
 def optimise_landmarks(result):
     time_stamp = time.time()
     if result.hand_landmarks:
