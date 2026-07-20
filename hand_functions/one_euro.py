@@ -77,19 +77,25 @@ def create_landmark_filters():
         }
         for i in range(LANDMARK_NUM)
     }
-
+last_num_hands = 0
 # --- Optimises each hands landmark detections ----------------
-# Stops jitters and good for overlap, still bugs with wrist joint tho
+# Stops jitters and good for overlap
 def optimise_landmarks(result):
+    global last_num_hands
     time_stamp = time.time()
     if result.hand_landmarks:
+        num_hands = len(result.hand_landmarks)
+        
+        if num_hands != last_num_hands:
+            for h_index in range(num_hands):
+                if h_index not in landmark_filters:
+                    landmark_filters[h_index] = create_landmark_filters()
+            last_num_hands = num_hands
+            
+
         # Loop through every detected point
         for h_index, hand in enumerate(result.hand_landmarks):
-            if h_index not in landmark_filters:
-                landmark_filters[h_index] = create_landmark_filters()
-            
             for landmark_index, landmark in enumerate(hand):
-                if landmark_index in landmark_filters[h_index]:
                     # Filter each axis independently using the current time
                     filtered_x = landmark_filters[h_index][landmark_index]['x'](landmark.x, time_stamp)
                     filtered_y = landmark_filters[h_index][landmark_index]['y'](landmark.y, time_stamp)
@@ -99,4 +105,6 @@ def optimise_landmarks(result):
                     landmark.x = filtered_x
                     landmark.y = filtered_y
                     landmark.z = filtered_z
+    else:
+        last_num_hands = 0
     return result
