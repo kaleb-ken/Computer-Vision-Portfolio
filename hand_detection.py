@@ -37,6 +37,8 @@ options = vision.GestureRecognizerOptions(
 detector = vision.GestureRecognizer.create_from_options(options)
 start_time = time.time()
 
+screenshot_counter = 0
+
 # --- Running video feed -----------------
 while True:
     ret, frame = feed.read()
@@ -75,13 +77,17 @@ while True:
     cv2.imshow('Model Input', model_input) # Standard Video
     model_input = None
 
+    
+
     key = cv2.waitKey(5) & 0xFF # Detects keyboard input
 
     if key == ord('q'): # Quits application
         break
     if key == ord('t'): # Saves hand data as image and csv
-        #model_input = hd.screenshot_hand(frame, result)
+        model_input = hd.screenshot_hand(frame, result)
         hd.save_landmark_data(result.hand_world_landmarks, TRAINING_GESTURE)
+        screenshot_counter += 1
+        print(f"Saved hand data as image and csv, screenshot number: {screenshot_counter}")
         
    
         
