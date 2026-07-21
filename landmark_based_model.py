@@ -15,8 +15,9 @@ from tqdm import tqdm
 
 
 # --- Setting up Neural Net -----------------
+HIDDEN_LAYER = 32
 class Model(nn.Module):
-    def __init__(self, input_layer=63, h1=16, h2=16, output=2):
+    def __init__(self, input_layer=63, h1=HIDDEN_LAYER, h2=HIDDEN_LAYER, output=2):
         """ Initialising the model
         Args:
             input_layer: data input
@@ -132,8 +133,8 @@ if not os.path.isfile("models/landmark_model.pth"):
     torch.save({
         "model_state_dict": model.state_dict(),
         "input_layer": 63,
-        "h1": 16,
-        "h2": 16,
+        "h1": HIDDEN_LAYER,
+        "h2": HIDDEN_LAYER,
         "output": 2,
         "class_to_index": training_data.class_to_index,
     }, "models/landmark_model.pth")
