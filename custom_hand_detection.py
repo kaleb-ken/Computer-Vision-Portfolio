@@ -34,7 +34,16 @@ data_dir = "hand_image_data/train_folder" #change this to the folder you want to
 
 target_to_class = {v: k for k, v in ImageFolder(data_dir).class_to_idx.items()} #dictionary that links each number with a correct label
 
-transform = transforms.Compose([
+#augmented transform for training only - geometric only, no color jitter since these are skeleton drawings
+train_transform = transforms.Compose([
+    transforms.Resize((500, 500)),
+    transforms.RandomRotation(15),
+    transforms.RandomAffine(degrees=0, translate=(0.1, 0.1), scale=(0.9, 1.1)),
+    transforms.ToTensor(),
+])
+
+#plain transform for val/test - no augmentation, so we measure true performance
+eval_transform = transforms.Compose([
     transforms.Resize((500, 500)),
     transforms.ToTensor(),
 ])
@@ -53,14 +62,21 @@ class SimpleHandClassifier(nn.Module):
         self.conv = nn.Sequential(
             nn.Conv2d(3, 16, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.MaxPool2d(2),
+            nn.MaxPool2d(2),          # 500 -> 250
             nn.Conv2d(16, 32, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.MaxPool2d(2),
+            nn.MaxPool2d(2),          # 250 -> 125
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),          # 125 -> 62
+            nn.AdaptiveAvgPool2d((8, 8))  # force fixed small size regardless of rounding
         )
 
         #make a classifier
-        self.classifier = nn.Linear(32 * 125 * 125, num_classes) #500 -> 250 -> 125 after two maxpools
+        self.classifier = nn.Sequential(
+            nn.Dropout(0.5),
+            nn.Linear(64 * 8 * 8, num_classes)
+        )
     
     def forward(self, x):
 
@@ -75,9 +91,9 @@ train_folder = "hand_image_data/train_folder"
 val_folder = "hand_image_data/validation_folder"
 test_folder = "hand_image_data/test_folder"
 
-train_dataset = HandSignDataset(train_folder, transform=transform)
-val_dataset = HandSignDataset(val_folder, transform=transform)
-test_dataset = HandSignDataset(test_folder, transform=transform)
+train_dataset = HandSignDataset(train_folder, transform=train_transform)
+val_dataset = HandSignDataset(val_folder, transform=eval_transform)
+test_dataset = HandSignDataset(test_folder, transform=eval_transform)
 
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
@@ -88,6 +104,7 @@ test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 NUM_EPOCHS = 10 #CAN BE CHANGED TO WHATEVER
 train_loss, val_losses = [], []
+best_val_loss = float('inf')
 
 model = SimpleHandClassifier(num_classes=len(train_dataset.classes)) #should be the number of classes in the dataset, eg num_classes = 3
 #model.to(device) #if using GPU, uncomment this line
@@ -129,7 +146,11 @@ for epoch in range(NUM_EPOCHS):
 
     print(f'Epoch {epoch+1}/{NUM_EPOCHS}, Train Loss: {epoch_loss:.4f}, Val Loss: {val_epoch_loss:.4f}')
 
-torch.save(model.state_dict(), "handsign_model.pth")
+    #save whichever epoch generalizes best, not just the last one
+    if val_epoch_loss < best_val_loss:
+        best_val_loss = val_epoch_loss
+        torch.save(model.state_dict(), "handsign_model.pth")
+        print(f'  -> New best model saved (val loss: {val_epoch_loss:.4f})')
 
 
 with open("class_mapping.json", "w") as f:
