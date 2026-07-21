@@ -40,7 +40,8 @@ class Model(nn.Module):
         return x
     
 # --- Setting up Dataset -----------------
-CSV_FOLDER = "landmark_data/single_hand/training/middle_finger_train.csv" 
+CSV_TRAIN = "landmark_data/single_hand/training/middle_finger_train.csv" 
+CSV_TEST = "landmark_data/single_hand/testing/middle_finger_test.csv"
 
 class LandmarkDataset(Dataset):
     def __init__(self, data_dir, transform=None):
@@ -62,12 +63,19 @@ class LandmarkDataset(Dataset):
 
    
 
-training_data = LandmarkDataset(CSV_FOLDER)
+
+training_data = LandmarkDataset(CSV_TRAIN)
+testing_data = LandmarkDataset(CSV_TEST)
 
 training_load = DataLoader(
     dataset=training_data,
     batch_size=32,
     shuffle=True
+)
+testing_load = DataLoader(
+    dataset=testing_data,
+    batch_size=32,
+    shuffle=False
 )
 
 # --- Training Loop -----------------
@@ -97,5 +105,22 @@ for epoch in range(NUM_EPOCHS):
 
 # --- Testing Loop -----------------------
 
+model.eval()
+correct = 0
+total = 0
+test_loss = 0.0
 
+with torch.no_grad():
+    for landmarks, gestures in testing_load:
+        output = model(landmarks)
+        loss = criterion(output, gestures)
+        test_loss += loss.item() * landmarks.size(0)
+
+        predictions = torch.argmax(output, dim=1)  
+        correct += (predictions == gestures).sum().item()
+        total += gestures.size(0)
+avg_test_loss = test_loss / len(testing_load.dataset)
+accuracy = correct / total
+
+print(f"Test Loss: {avg_test_loss:.4f} | Test Accuracy: {accuracy:.2%}")
 
