@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt #for data viz
 import pandas as pd 
 import numpy as np
 from tqdm import tqdm
+import json
 
 
 #Definding the dataset---------------------
@@ -29,7 +30,7 @@ class HandSignDataset(Dataset):
         return self.data.classes #returns the data classes from the image folder
     
 
-data_dir = "./data"
+data_dir = "hand_image_data/train_folder" #change this to the folder you want to use for training, validation, or testing
 
 target_to_class = {v: k for k, v in ImageFolder(data_dir).class_to_idx.items()} #dictionary that links each number with a correct label
 
@@ -38,11 +39,11 @@ transform = transforms.Compose([
     transforms.ToTensor(),
 ])
 
-dataset = HandSignDataset(data_dir, transform=transform) #NEED TO GET DATA FAHHH, also this is torch.ToTensor converting
+#dataset = HandSignDataset(data_dir, transform=transform) #NEED TO GET DATA FAHHH, also this is torch.ToTensor converting
 
 #batching the dataset now
 
-Dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+#Dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
 
 #pytorch model-----------------------------------
 
@@ -70,9 +71,9 @@ class SimpleHandClassifier(nn.Module):
     
 #Training loop ---------------------------
 
-train_folder = "./data/train"
-val_folder = "./data/val"
-test_folder = "./data/test"
+train_folder = "hand_image_data/train_folder"
+val_folder = "hand_image_data/validation_folder"
+test_folder = "hand_image_data/test_folder"
 
 train_dataset = HandSignDataset(train_folder, transform=transform)
 val_dataset = HandSignDataset(val_folder, transform=transform)
@@ -88,7 +89,7 @@ test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 NUM_EPOCHS = 10 #CAN BE CHANGED TO WHATEVER
 train_loss, val_losses = [], []
 
-model = SimpleHandClassifier(num_classes=len(dataset.classes)) #should be the number of classes in the dataset, eg num_classes = 3
+model = SimpleHandClassifier(num_classes=len(train_dataset.classes)) #should be the number of classes in the dataset, eg num_classes = 3
 #model.to(device) #if using GPU, uncomment this line
 
 #Loss Function
@@ -127,3 +128,9 @@ for epoch in range(NUM_EPOCHS):
     val_losses.append(val_epoch_loss)
 
     print(f'Epoch {epoch+1}/{NUM_EPOCHS}, Train Loss: {epoch_loss:.4f}, Val Loss: {val_epoch_loss:.4f}')
+
+torch.save(model.state_dict(), "handsign_model.pth")
+
+
+with open("class_mapping.json", "w") as f:
+    json.dump(target_to_class, f)
