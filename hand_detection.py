@@ -13,6 +13,7 @@ import mediapipe as mp
 import torch
 from mediapipe.tasks.python import vision
 from landmark_based_model import Model
+from landmark_based_model import run_model
 import hand_functions.hand_visuals as hv
 import hand_functions.hand_data as hd
 import hand_functions.one_euro as OE
@@ -49,9 +50,9 @@ model = Model(
 )
 model.load_state_dict(checkpoint["model_state_dict"])
 model.eval()
-
 class_to_index = checkpoint["class_to_index"]
 index_to_class = {v: k for k, v in class_to_index.items()}
+
 
 screenshot_counter = 0
 
@@ -74,19 +75,7 @@ while True:
     result = OE.optimise_landmarks(result)
 
     # -- Landmark gesture model -------------
-    confidence, gesture = 0, None
-    landmark_list = []
-    if result.hand_world_landmarks:
-        for landmark in result.hand_world_landmarks[0]:
-            landmark_list.extend([landmark.x, landmark.y, landmark.z])
-        input_tensor = torch.tensor(landmark_list, dtype=torch.float32).unsqueeze(0)  # shape [1, 63]
-        
-        with torch.no_grad():
-            output = model(input_tensor)
-            prediction = torch.argmax(output, dim=1).item()
-            confidence = torch.softmax(output, dim=1)[0][prediction].item()
-
-        gesture = index_to_class[prediction]
+    gesture, confidence = run_model(result, model, index_to_class)
 
     # --- Visualisations for detections -----------------
     hands_num = f"Hands detected: {len(result.hand_landmarks)}"
@@ -112,7 +101,7 @@ while True:
     if key == ord('q'): # Quits application
         break
     if key == ord('t'): # Saves hand data as image and csv
-        model_input = hd.screenshot_hand(frame, result)
+        #model_input = hd.screenshot_hand(frame, result)
         hd.save_landmark_data(result.hand_world_landmarks, TRAINING_GESTURE)
         screenshot_counter += 1
         print(f"Saved hand data as image and csv, screenshot number: {screenshot_counter}")
