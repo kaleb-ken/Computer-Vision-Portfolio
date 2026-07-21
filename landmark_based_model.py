@@ -10,6 +10,7 @@ import torch.nn as nn
 import torch.nn.functional as f
 from torch.utils.data import Dataset, DataLoader
 import pandas as pd
+from tqdm import tqdm
 
 
 # --- Setting up Neural Net -----------------
@@ -20,7 +21,7 @@ class Model(nn.Module):
             input_layer: data input
             h1: Dense layer
             h2: Dense layer
-            output: Confidence value for 1 of 10 outputs
+            output: Gesture detected or not
         """
         super().__init__()
         self.conns1 = nn.Linear(input_layer, h1)
@@ -39,18 +40,25 @@ class Model(nn.Module):
         return x
     
 # --- Setting up Dataset -----------------
-CSV_FOLDER = "landmark_data/single_hand/training/middle_finger.csv" 
+CSV_FOLDER = "landmark_data/single_hand/training/middle_finger_train.csv" 
 
 class LandmarkDataset(Dataset):
     def __init__(self, data_dir, transform=None):
         self.data = pd.read_csv(data_dir)
         self.transform = transform
+
+        self.classes = sorted(self.data.iloc[:, -1].unique())
+        self.class_to_index = {c: i for i, c in enumerate(self.classes)}
     
     def __len__(self):
         return len(self.data)
     
     def __getitem__(self, idx):
-        return self.data[idx]
+        row = self.data.iloc[idx]
+        landmarks = torch.tensor(row.iloc[:-1].values.astype("float32"))
+        label_str = row.iloc[-1]
+        gesture = torch.tensor(self.class_to_index[label_str], dtype=torch.long)
+        return landmarks, gesture
 
    
 
@@ -59,20 +67,35 @@ training_data = LandmarkDataset(CSV_FOLDER)
 training_load = DataLoader(
     dataset=training_data,
     batch_size=32,
-    shuffle=True,
+    shuffle=True
 )
 
 # --- Training Loop -----------------
 # Setting up loop
 model = Model()
-criterion = nn.MSELoss()
+criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 NUM_EPOCHS = 10
 losses = []
 
 for epoch in range(NUM_EPOCHS):
-    Model.train()
+    model.train()
     running_loss = 0.0
+    progress_bar = tqdm(training_load, desc=f"Epoch {epoch+1}/{NUM_EPOCHS}")
+    for landmarks, gestures in progress_bar:
+        
+        optimizer.zero_grad()
+        output = model(landmarks)
+        loss = criterion(output, gestures)
+        loss.backward() #back propagation
+        optimizer.step()
+        running_loss += loss.item() * landmarks.size(0)
+        progress_bar.set_postfix({'loss': loss.item()})  # Update the progress bar with the current loss
+    
+    epoch_loss = running_loss / len(training_load.dataset)
+    losses.append(epoch_loss)
 
-    for batch_index, gestures in enumerate(training_load):
+# --- Testing Loop -----------------------
+
+
 
