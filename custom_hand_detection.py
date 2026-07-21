@@ -102,7 +102,7 @@ test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 #so we have our datasets and our loop here is the real training loop.
 
-NUM_EPOCHS = 10 #CAN BE CHANGED TO WHATEVER
+NUM_EPOCHS = 30 #CAN BE CHANGED TO WHATEVER
 train_loss, val_losses = [], []
 best_val_loss = float('inf')
 
@@ -152,6 +152,17 @@ for epoch in range(NUM_EPOCHS):
         torch.save(model.state_dict(), "handsign_model.pth")
         print(f'  -> New best model saved (val loss: {val_epoch_loss:.4f})')
 
+
+plt.figure(figsize=(8, 5))
+plt.plot(range(1, NUM_EPOCHS + 1), train_loss, label="Train Loss", marker='o')
+plt.plot(range(1, NUM_EPOCHS + 1), val_losses, label="Val Loss", marker='o')
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.title("Training vs Validation Loss")
+plt.legend()
+plt.grid(True)
+plt.savefig("loss_curve.png")
+plt.show()
 
 with open("class_mapping.json", "w") as f:
     json.dump(target_to_class, f)
