@@ -14,7 +14,7 @@ from mediapipe.tasks.python import vision
 import hand_functions.hand_visuals as hv
 import hand_functions.hand_data as hd
 import hand_functions.one_euro as OE
-#import hand_functions.hand_instruments as hi
+import hand_functions.hand_instruments as hi
 
 # --- Change when creating a new dataset ---
 TRAINING_GESTURE = "middle_finger"
@@ -66,7 +66,7 @@ while True:
     handedness = hv.handedness(result)
 
     # --- Code for arduino -----------------
-    #hi.buzz_detection(handedness)
+    hi.buzz_detection(handedness)
 
     # Outputing text to feed
     cv2.putText(frame, hands_num, (40, 460), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness=4)

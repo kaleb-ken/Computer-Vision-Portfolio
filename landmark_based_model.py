@@ -8,8 +8,9 @@ Uses landmark data for training.
 import torch
 import torch.nn as nn
 import torch.nn.functional as f
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 import pandas as pd
+
 
 # --- Setting up Neural Net -----------------
 class Model(nn.Module):
@@ -55,11 +56,23 @@ class LandmarkDataset(Dataset):
 
 training_data = LandmarkDataset(CSV_FOLDER)
 
-    
+training_load = DataLoader(
+    dataset=training_data,
+    batch_size=32,
+    shuffle=True,
+)
+
 # --- Training Loop -----------------
 # Setting up loop
 model = Model()
-criterion = nn.CrossEntropyLoss()
+criterion = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-NUM_EPOCHS = 5
+NUM_EPOCHS = 10
 losses = []
+
+for epoch in range(NUM_EPOCHS):
+    Model.train()
+    running_loss = 0.0
+
+    for batch_index, gestures in enumerate(training_load):
+

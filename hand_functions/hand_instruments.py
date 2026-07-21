@@ -7,7 +7,7 @@ Functions for arduino implementation
 
 # Adding dependencies
 import time
-import pymata4
+from pymata4 import pymata4
 
 # Arduino / buzzer setup 
 BUZZER_PIN = 8                                 # the 'S' (signal) leg of the buzzer -> D8
@@ -20,9 +20,13 @@ INTERVAL_RIGHT = 0.40                           # right hand -> slow beeps
 INTERVAL_LEFT  = 0.15                           # left hand  -> fast beeps
 INTERVAL_BOTH  = 0.06                           # both hands -> fastest beeps idk
 
+ # initial buzzer state
+buzzer_is_on = False
+last_toggle = time.time()
 
 
 def buzz_detection(detected):
+    global buzzer_is_on, last_toggle
     detected_R, detected_L = detected
     # link hand detection to buzzer state
     # Decide how fast to beep (or not at all)
@@ -35,9 +39,6 @@ def buzz_detection(detected):
     else:
         interval = None                 # no hands   -> silence
 
-    # initial buzzer state
-    buzzer_is_on = False
-    last_toggle = time.time()
 
     # Non-blocking beep: flip the pin only once enough time has passed,
     # so the video feed never freezes (no time.sleep!).
