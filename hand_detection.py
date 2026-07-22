@@ -62,8 +62,7 @@ while True:
     if not ret:
         break
     if model_input is None: # Initilize the canvas as a black image 
-        model_input = np.zeros_like(frame)
-    frame = cv2.flip(frame, 1) 
+        model_input = np.zeros_like(frame) 
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Converting colour config for mediapipe
 
     # --- Detecting hand in video -----------------
@@ -75,7 +74,7 @@ while True:
     result = OE.optimise_landmarks(result)
 
     # -- Landmark gesture model -------------
-    gesture, confidence = run_model(result, model, index_to_class)
+    #gesture, confidence = run_model(result, model, index_to_class)
 
     # --- Visualisations for detections -----------------
     hands_num = f"Hands detected: {len(result.hand_landmarks)}"
@@ -87,12 +86,9 @@ while True:
 
     # Outputing text to feed
     cv2.putText(model_input, hands_num, (40, 460), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness=4)
-    cv2.putText(model_input, f"Gesture: {gesture} ({confidence:.2%})", (40, 430), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness=4)
+    #cv2.putText(model_input, f"Gesture: {gesture} ({confidence:.2%})", (40, 430), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness=4)
     
-    # Displaying feed
-    cv2.imshow('capture', frame) # Standard Video
-    cv2.imshow('Model Input', model_input) # Standard Video
-    model_input = None
+    
 
     
 
@@ -102,12 +98,16 @@ while True:
         break
     if key == ord('t'): # Saves hand data as image and csv
         #model_input = hd.screenshot_hand(frame, result)
-        hd.save_landmark_data(result.hand_world_landmarks, TRAINING_GESTURE)
+        hd.save_landmark_data(result, TRAINING_GESTURE)
         screenshot_counter += 1
         print(f"Saved hand data as image and csv, screenshot number: {screenshot_counter}")
         
    
-        
+    # Displaying feed
+    frame = cv2.flip(frame, 1) # Flipping feed
+    cv2.imshow('capture', frame) # Standard Video
+    cv2.imshow('Model Input', model_input) # Standard Video
+    model_input = None
         
        
 

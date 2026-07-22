@@ -15,9 +15,11 @@ from tqdm import tqdm
 
 
 # --- Setting up Neural Net -----------------
-HIDDEN_LAYER = 32
+INPUT_LAYER = 126
+DENSE_LAYER = 32
+OUTPUT_LAYER = 2
 class Model(nn.Module):
-    def __init__(self, input_layer=63, h1=HIDDEN_LAYER, h2=HIDDEN_LAYER, output=2):
+    def __init__(self, input_layer=INPUT_LAYER, h1=DENSE_LAYER, h2=DENSE_LAYER, output=OUTPUT_LAYER):
         """ Initialising the model
         Args:
             input_layer: data input
@@ -42,8 +44,8 @@ class Model(nn.Module):
         return x
     
 # --- Setting up Dataset -----------------
-CSV_TRAIN = "landmark_data/single_hand/training/middle_finger_train.csv" 
-CSV_TEST = "landmark_data/single_hand/testing/middle_finger_test.csv"
+CSV_TRAIN = "landmark_data/middle_finger_train.csv" 
+CSV_TEST = "landmark_data/middle_finger_test.csv"
 
 class LandmarkDataset(Dataset):
     def __init__(self, data_dir, class_to_index=None, transform=None):
@@ -68,29 +70,31 @@ class LandmarkDataset(Dataset):
    
 
 
-training_data = LandmarkDataset(CSV_TRAIN)
-testing_data = LandmarkDataset(CSV_TEST)
 
-training_load = DataLoader(
-    dataset=training_data,
-    batch_size=32,
-    shuffle=True
-)
-testing_load = DataLoader(
-    dataset=testing_data,
-    batch_size=32,
-    shuffle=False
-)
 
 # --- Training Loop -----------------
-# Setting up loop
 if not os.path.isfile("models/landmark_model.pth"):
+    # --- Loading dataset ---
+    training_data = LandmarkDataset(CSV_TRAIN)
+    testing_data = LandmarkDataset(CSV_TEST)
+
+    training_load = DataLoader(
+        dataset=training_data,
+        batch_size=32,
+        shuffle=True
+    )
+    testing_load = DataLoader(
+        dataset=testing_data,
+        batch_size=32,
+        shuffle=False
+    )
+    # --- Setting up model ---
     model = Model()
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     NUM_EPOCHS = 10
     losses = []
-
+    # --- Training ---
     for epoch in range(NUM_EPOCHS):
         model.train()
         running_loss = 0.0
@@ -130,15 +134,17 @@ if not os.path.isfile("models/landmark_model.pth"):
 
     print(f"Test Loss: {avg_test_loss:.4f} | Test Accuracy: {accuracy:.2%}")
 
+    # --- Saving model ---
     torch.save({
         "model_state_dict": model.state_dict(),
-        "input_layer": 63,
-        "h1": HIDDEN_LAYER,
-        "h2": HIDDEN_LAYER,
-        "output": 2,
+        "input_layer": INPUT_LAYER,
+        "h1": DENSE_LAYER,
+        "h2": DENSE_LAYER,
+        "output": OUTPUT_LAYER,
         "class_to_index": training_data.class_to_index,
     }, "models/landmark_model.pth")
 
+# --- Using the model with opencv and mediapipe -------------
 def run_model(result, model ,index_to_class):
     confidence, gesture = 0, None
     landmark_list = []
