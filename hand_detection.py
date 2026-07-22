@@ -55,6 +55,8 @@ index_to_class = {v: k for k, v in class_to_index.items()}
 
 
 screenshot_counter = 0
+capturing = False
+last_capture_time = 0
 
 # --- Running video feed -----------------
 while True:
@@ -94,17 +96,32 @@ while True:
     cv2.imshow('Model Input', model_input) # Standard Video
     model_input = None
 
-    
+    TIME = 0.94
 
     key = cv2.waitKey(5) & 0xFF # Detects keyboard input
 
     if key == ord('q'): # Quits application
         break
     if key == ord('t'): # Saves hand data as image and csv
-        #model_input = hd.screenshot_hand(frame, result)
-        hd.save_landmark_data(result.hand_world_landmarks, TRAINING_GESTURE)
+        model_input = hd.screenshot_hand(frame, result)
+        #hd.save_landmark_data(result.hand_world_landmarks, TRAINING_GESTURE)
         screenshot_counter += 1
         print(f"Saved hand data as image and csv, screenshot number: {screenshot_counter}")
+    if key == ord('r'):
+            capturing = not capturing
+            print("Continuous capture:", "ON" if capturing else "OFF")
+
+    if (capturing and (time.time() - last_capture_time)) >= TIME:
+        model_input = hd.screenshot_hand(frame, result)
+        screenshot_counter += 1
+        last_capture_time = time.time()
+        print(f"Saved hand data as image and csv, screenshot number: {screenshot_counter}")
+
+
+
+
+
+
         
    
         
