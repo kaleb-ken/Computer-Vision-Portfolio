@@ -17,7 +17,7 @@ from tqdm import tqdm
 # --- Setting up Neural Net -----------------
 INPUT_LAYER = 126
 DENSE_LAYER = 32
-OUTPUT_LAYER = 2
+OUTPUT_LAYER = 12
 class Model(nn.Module):
     def __init__(self, input_layer=INPUT_LAYER, h1=DENSE_LAYER, h2=DENSE_LAYER, output=OUTPUT_LAYER):
         """ Initialising the model
@@ -44,8 +44,8 @@ class Model(nn.Module):
         return x
     
 # --- Setting up Dataset -----------------
-CSV_TRAIN = "landmark_data/middle_finger_train.csv" 
-CSV_TEST = "landmark_data/middle_finger_test.csv"
+CSV_TRAIN = "landmark_data/hand_seals_train.csv" 
+CSV_TEST = "landmark_data/hand_seals_test.csv"
 
 class LandmarkDataset(Dataset):
     def __init__(self, data_dir, class_to_index=None, transform=None):

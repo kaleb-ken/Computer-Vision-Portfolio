@@ -53,7 +53,7 @@ model.eval()
 class_to_index = checkpoint["class_to_index"]
 index_to_class = {v: k for k, v in class_to_index.items()}
 
-
+# --- Keeping track of capture ---------------------
 screenshot_counter = 0
 capturing = False
 last_capture_time = 0
