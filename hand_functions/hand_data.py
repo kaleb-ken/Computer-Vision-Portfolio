@@ -13,9 +13,7 @@ import cv2
 import hand_functions.hand_visuals as hv
 
 # --- CHANGE FILE PATH WHEN CREATIN NEW DATASETS ------------------
-SCREENSHOT_FOLDER = "hand_image_data/test_folder/Middle_finger"
-CSV_FOLDER = "landmark_data/middle_finger_test.csv" 
-SCREENSHOT_FOLDER = "hand_image_data/train_folder/Shadow_clone"
+SCREENSHOT_FOLDER = "hand_image_data/test_folder/Shadow_clone"
 #CSV_FOLDER = "landmark_data/single_hand/testing/middle_finger_test.csv" 
 
 
@@ -24,13 +22,15 @@ def screenshot_hand(frame, result):
     model_input = np.zeros_like(frame) # Creates a black canvas the size of screen
     hv.draw_hand_struct(result, model_input) # Draws hand structure
 
+    model_input = cv2.flip(model_input, 1) # Match the mirrored live view
+
     # Creates file path and name
     time_stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     file_name = f"hand_struct_{time_stamp}.jpg"
     full_path = os.path.join(SCREENSHOT_FOLDER, file_name)
     
     cv2.imwrite(full_path, model_input) # Saves file
-    return None
+    return model_input
 
 # --- Creates csv file with header ----------------
 def init_csv_file(path):

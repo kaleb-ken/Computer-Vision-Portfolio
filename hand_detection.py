@@ -99,8 +99,8 @@ while True:
     if key == ord('q'): # Quits application
         break
     if key == ord('t'): # Saves hand data as image and csv
-        #model_input = hd.screenshot_hand(frame, result)
-        hd.save_landmark_data(result, TRAINING_GESTURE)
+        model_input = hd.screenshot_hand(frame, result)
+        #hd.save_landmark_data(result, TRAINING_GESTURE)
         screenshot_counter += 1
         print(f"Saved hand data as image and csv, screenshot number: {screenshot_counter}")
     if key == ord('r'):
@@ -112,24 +112,14 @@ while True:
         screenshot_counter += 1
         last_capture_time = time.time()
         print(f"Saved hand data as image and csv, screenshot number: {screenshot_counter}")
-
-
-
-
-
-
-        
    
     # Displaying feed
     frame = cv2.flip(frame, 1) # Flipping feed
+    model_input = cv2.flip(model_input, 1) # Flipping feed
     cv2.imshow('capture', frame) # Standard Video
     cv2.imshow('Model Input', model_input) # Standard Video
     model_input = None
         
-       
-
-
-    
 
 feed.release()
 cv2.destroyAllWindows()
