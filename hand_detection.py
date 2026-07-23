@@ -20,7 +20,7 @@ import hand_functions.one_euro as OE
 #import hand_functions.hand_instruments as hi
 
 # --- Change when creating a new dataset ---
-TRAINING_GESTURE = "not_middle_finger"
+TRAINING_GESTURE = "Shadow_clone"
 
 # --- Setting up capture -----------------
 model_input = None
@@ -109,6 +109,7 @@ while True:
 
     if (capturing and (time.time() - last_capture_time)) >= TIME:
         model_input = hd.screenshot_hand(frame, result)
+        hd.save_landmark_data(result, gesutre=)
         screenshot_counter += 1
         last_capture_time = time.time()
         print(f"Saved hand data as image and csv, screenshot number: {screenshot_counter}")

@@ -14,7 +14,7 @@ import hand_functions.hand_visuals as hv
 
 # --- CHANGE FILE PATH WHEN CREATIN NEW DATASETS ------------------
 SCREENSHOT_FOLDER = "hand_image_data/train_folder/Middle_finger"
-#CSV_FOLDER = "landmark_data/single_hand/testing/middle_finger_test.csv" 
+CSV_FOLDER = "landmark_data/hand_seals_training.csv" 
 
 
 # --- Screenshots a image of the hand structure ---------------
