@@ -12,8 +12,6 @@ from pymata4 import pymata4
 # Arduino / buzzer setup 
 BUZZER_PIN = 8                                 # the 'S' (signal) leg of the buzzer -> D8
 board = pymata4.Pymata4()                      # auto-detects the Arduino's USB port
-board.set_pin_mode_digital_output(BUZZER_PIN)
-board.digital_write(BUZZER_PIN, 0)             # start silent
 
 # Beep speeds (ms). 
 INTERVAL_RIGHT = 0.40                           # right hand -> slow beeps
@@ -26,6 +24,10 @@ last_toggle = time.time()
 
 
 def buzz_detection(detected):
+
+    board.set_pin_mode_digital_output(BUZZER_PIN)
+    board.digital_write(BUZZER_PIN, 0)             # start silent
+
     global buzzer_is_on, last_toggle
     detected_R, detected_L = detected
     # link hand detection to buzzer state
@@ -52,3 +54,4 @@ def buzz_detection(detected):
             buzzer_is_on = not buzzer_is_on
             board.digital_write(BUZZER_PIN, 1 if buzzer_is_on else 0)
             last_toggle = now
+
