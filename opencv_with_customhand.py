@@ -125,7 +125,7 @@ while True:
         with torch.no_grad(): #load the model and make predictions
             output = model(input_tensor) #RUNS INFERENCE HERE!!!
             probs = torch.softmax(output, dim=1) #apply softmax to get probabilities
-            print(f"L_sign: {probs[0][0]:.3f}, Middle_finger: {probs[0][1]:.3f}")
+            print(f"L_sign: {probs[0][0]:.3f}, Middle_finger: {probs[0][1]:.3f}, Shadow_clone: {probs[0][2]:.3f}")
             confidence, predicted_idx = torch.max(probs, dim=1) #get the highest probability and its index
             predicted_label = target_to_class[predicted_idx.item()]
             confidence_text = f"{confidence.item()*100:.1f}%"
