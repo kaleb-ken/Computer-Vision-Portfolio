@@ -65,8 +65,8 @@ class EuroOne:
 landmark_filters = {}
 LANDMARK_NUM = 21
 INITIAL_FREQ = 30.0 
-MIN_CUTOFF = 0.5     
-BETA = 0.05  
+MIN_CUTOFF = 1.0    
+BETA = 5.0  
 # --- Creates filters for each landmark in each hand -----------------
 def create_landmark_filters():
     return {

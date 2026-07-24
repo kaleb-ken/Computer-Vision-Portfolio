@@ -100,7 +100,7 @@ while True:
         break
     if key == ord('t'): # Saves hand data as image and csv
         model_input = hd.screenshot_hand(frame, result)
-        #hd.save_landmark_data(result, TRAINING_GESTURE)
+        hd.save_landmark_data(result, TRAINING_GESTURE)
         screenshot_counter += 1
         print(f"Saved hand data as image and csv, screenshot number: {screenshot_counter}")
     if key == ord('r'):
@@ -109,7 +109,7 @@ while True:
 
     if (capturing and (time.time() - last_capture_time)) >= TIME:
         model_input = hd.screenshot_hand(frame, result)
-        #hd.save_landmark_data(result, gesture=TRAINING_GESTURE)
+        hd.save_landmark_data(result, gesture=TRAINING_GESTURE)
         screenshot_counter += 1
         last_capture_time = time.time()
         print(f"Saved hand data as image and csv, screenshot number: {screenshot_counter}")
