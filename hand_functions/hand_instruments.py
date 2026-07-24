@@ -9,19 +9,23 @@ Functions for arduino implementation
 import time
 from pymata4 import pymata4
 
-# Arduino / buzzer setup 
-BUZZER_PIN = 8                                 # the 'S' (signal) leg of the buzzer -> D8
-board = pymata4.Pymata4()                      # auto-detects the Arduino's USB port
+# --- Tests for connected ardiuno ---------------
+try:
+    board = pymata4.Pymata4()                      # auto-detects the Arduino's USB port
 
+except:
+    print("No ardiuno connected")
+
+# --- Buzzer code setup -------------------
 # Beep speeds (ms). 
 INTERVAL_RIGHT = 0.40                           # right hand -> slow beeps
 INTERVAL_LEFT  = 0.15                           # left hand  -> fast beeps
 INTERVAL_BOTH  = 0.06                           # both hands -> fastest beeps idk
+BUZZER_PIN = 8                                 # the 'S' (signal) leg of the buzzer -> D8
 
- # initial buzzer state
+# initial buzzer state
 buzzer_is_on = False
 last_toggle = time.time()
-
 
 def buzz_detection(detected):
 
