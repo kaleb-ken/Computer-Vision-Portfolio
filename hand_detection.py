@@ -17,7 +17,7 @@ from landmark_based_model import run_model
 import hand_functions.hand_visuals as hv
 import hand_functions.hand_data as hd
 import hand_functions.one_euro as OE
-#import hand_functions.hand_instruments as hi
+import hand_functions.hand_instruments as hi
 
 # --- Change when creating a new dataset ---
 TRAINING_GESTURE = "Dragon"
@@ -82,6 +82,7 @@ while True:
     hands_num = f"Hands detected: {len(result.hand_landmarks)}"
     hv.draw_hand_struct(result, frame) # Draws landmarks on detected hands
     hv.draw_hand_struct(result, model_input) # Draws landmarks on detected hands
+    handedness = hv.handedness(result)
 
     # --- Code for arduino -----------------
     #hi.buzz_detection(handedness)
