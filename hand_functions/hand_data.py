@@ -41,7 +41,10 @@ def init_csv_file(path):
             file_header.extend([f"{hand}x{i}", f"{hand}y{i}", f"{hand}z{i}"])
         hand = "R"
     file_header.append("Gesture")
-    
+
+    # Creates folder if it doesn't exist
+    if not os.path.isdir("landmark_data"):
+        os.makedirs("landmark_data", exist_ok=True)
 
     with open(path, "w", newline="") as file:
         writer = csv.writer(file)
