@@ -13,7 +13,7 @@ import cv2
 import hand_functions.hand_visuals as hv
 
 # --- CHANGE FILE PATH WHEN CREATIN NEW DATASETS ------------------
-SCREENSHOT_FOLDER = "hand_image_data/train_folder/Middle_finger"
+SCREENSHOT_FOLDER = "hand_image_data/validation_folder/Dragon"
 CSV_FOLDER = "landmark_data/hand_seals_training.csv" 
 
 
